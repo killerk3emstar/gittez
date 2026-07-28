@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink-950: oklch(0.17 0.015 265);
+  --color-ink-900: oklch(0.21 0.017 265);
+  --color-ink-800: oklch(0.27 0.019 265);
+  --color-ink-700: oklch(0.36 0.021 265);
+  --color-ink-400: oklch(0.66 0.02 265);
+  --color-ink-200: oklch(0.86 0.012 265);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-ink-950 text-ink-200 antialiased;
+}
+
+/* Skeleton i banner o nieświeżych danych - jedyne dwie animacje w projekcie. */
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.6s ease-in-out infinite;
+}
