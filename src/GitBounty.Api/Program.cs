@@ -44,5 +44,9 @@ app.MapScalarApiReference();
 app.MapHealthEndpoints();
 app.MapProfileEndpoints();
 app.MapRecommendationEndpoints();
+app.MapWatchlistEndpoints();
 
 app.Run();
+
+// widoczne dla WebApplicationFactory w testach integracyjnych
+public partial class Program;

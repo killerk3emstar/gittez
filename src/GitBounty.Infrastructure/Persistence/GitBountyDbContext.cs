@@ -1,5 +1,8 @@
+using System.Text.Json;
 using GitBounty.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GitBounty.Infrastructure.Persistence;
 
@@ -18,7 +21,7 @@ public class GitBountyDbContext(DbContextOptions<GitBountyDbContext> options) : 
             e.ToTable("profiles");
             e.HasKey(x => x.GithubLogin);
             e.Property(x => x.GithubLogin).HasColumnName("github_login").HasMaxLength(64);
-            e.Property(x => x.TopLanguages).HasColumnName("top_languages").HasColumnType("jsonb");
+            AsJson(e.Property(x => x.TopLanguages).HasColumnName("top_languages"));
             e.Property(x => x.MedianSizeKb).HasColumnName("median_size_kb");
             e.Property(x => x.Interests).HasColumnName("interests").HasColumnType("jsonb");
             e.Property(x => x.PublicRepoCount).HasColumnName("public_repo_count");
@@ -30,11 +33,11 @@ public class GitBountyDbContext(DbContextOptions<GitBountyDbContext> options) : 
             e.ToTable("repo_cache");
             e.HasKey(x => x.FullName);
             e.Property(x => x.FullName).HasColumnName("full_name").HasMaxLength(255);
-            e.Property(x => x.Data).HasColumnName("data").HasColumnType("jsonb");
+            AsJson(e.Property(x => x.Data).HasColumnName("data"));
             e.Property(x => x.ETag).HasColumnName("etag").HasMaxLength(128);
             e.Property(x => x.FetchedAt).HasColumnName("fetched_at");
             e.Property(x => x.HealthScore).HasColumnName("health_score").HasPrecision(5, 2);
-            e.Property(x => x.HealthBreakdown).HasColumnName("health_breakdown").HasColumnType("jsonb");
+            AsJson(e.Property(x => x.HealthBreakdown).HasColumnName("health_breakdown")!);
             e.Property(x => x.HealthComputedAt).HasColumnName("health_computed_at");
             e.HasIndex(x => x.FetchedAt).HasDatabaseName("ix_repo_cache_fetched");
         });
@@ -86,4 +89,23 @@ public class GitBountyDbContext(DbContextOptions<GitBountyDbContext> options) : 
             e.HasIndex(x => x.SessionId).HasDatabaseName("ix_watchlist_session");
         });
     }
+
+    // Kolumna zostaje jsonb, ale serializację robimy sami zamiast zdawać się na
+    // mapowanie POCO w Npgsql - dzięki temu model buduje się na dowolnym
+    // providerze i test integracyjny działa na SQLite, bez Testcontainers.
+    // Kształt JSON-a jest ten sam co wcześniej, więc seed pozostaje zgodny.
+    static void AsJson<T>(PropertyBuilder<T> property) where T : class? =>
+        property
+            .HasColumnType("jsonb")
+            .HasConversion(
+                value => JsonSerializer.Serialize(value, JsonOptions),
+                json => JsonSerializer.Deserialize<T>(json, JsonOptions)!,
+                new ValueComparer<T>(
+                    (a, b) => Json(a) == Json(b),
+                    value => Json(value).GetHashCode(),
+                    value => JsonSerializer.Deserialize<T>(Json(value), JsonOptions)!));
+
+    static string Json<T>(T? value) => JsonSerializer.Serialize(value, JsonOptions);
+
+    static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.General);
 }
