@@ -15,7 +15,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GitBounty.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(GitBountyDbContext))]
-    [Migration("20260728122842_Initial")]
+    [Migration("20260728124356_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -136,7 +136,7 @@ namespace GitBounty.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("full_name");
 
-                    b.Property<RepoSnapshot>("Data")
+                    b.Property<RepoCandidate>("Data")
                         .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("data");

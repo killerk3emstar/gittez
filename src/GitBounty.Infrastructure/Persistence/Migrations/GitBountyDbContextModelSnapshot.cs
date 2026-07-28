@@ -133,7 +133,7 @@ namespace GitBounty.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("full_name");
 
-                    b.Property<RepoSnapshot>("Data")
+                    b.Property<RepoCandidate>("Data")
                         .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("data");

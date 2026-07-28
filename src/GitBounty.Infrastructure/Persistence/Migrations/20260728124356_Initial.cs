@@ -59,7 +59,7 @@ namespace GitBounty.Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     full_name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    data = table.Column<RepoSnapshot>(type: "jsonb", nullable: false),
+                    data = table.Column<RepoCandidate>(type: "jsonb", nullable: false),
                     etag = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
                     fetched_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     health_score = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: true),
