@@ -1,5 +1,6 @@
 using GitBounty.Api;
 using GitBounty.Api.Endpoints;
+using GitBounty.Core.Recommendations;
 using GitBounty.Infrastructure;
 using GitBounty.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,8 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 
 builder.Services.AddGitBountyPersistence(connectionString);
 builder.Services.AddGitHubClient(builder.Configuration);
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<RecommendationPipeline>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GitHubExceptionHandler>();
 builder.Services.AddOpenApi();
@@ -32,5 +35,6 @@ app.MapOpenApi();
 app.MapScalarApiReference();
 app.MapHealthEndpoints();
 app.MapProfileEndpoints();
+app.MapRecommendationEndpoints();
 
 app.Run();
