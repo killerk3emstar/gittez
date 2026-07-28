@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "smoke": "vite build --ssr smoke.tsx --outDir .smoke --logLevel warn && node .smoke/smoke.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.66.0",

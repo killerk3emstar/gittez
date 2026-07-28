@@ -12,6 +12,12 @@ export function formatAgo(iso: string): string {
   if (days < 30) return `${days} dni temu`
 
   const months = Math.round(days / 30)
+  if (months < 12) return `${months} mies. temu`
 
-  return months < 12 ? `${months} mies. temu` : `${Math.round(months / 12)} lata temu`
+  const years = Math.round(months / 12)
+
+  // "1 lata temu" i "5 lata temu" to dwa różne błędy - polski ma trzy formy.
+  if (years === 1) return 'rok temu'
+
+  return years < 5 ? `${years} lata temu` : `${years} lat temu`
 }

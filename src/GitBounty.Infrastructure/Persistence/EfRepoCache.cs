@@ -106,6 +106,18 @@ public sealed class EfRepoCache(
         await SaveIgnoringRacesAsync(db, ct);
     }
 
+    public async Task TouchIssuesAsync(string fullName, CancellationToken ct = default)
+    {
+        await using var db = await contextFactory.CreateDbContextAsync(ct);
+        var now = time.GetUtcNow();
+
+        await db.IssueCache.Where(i => i.RepoFullName == fullName)
+            .ExecuteUpdateAsync(s => s.SetProperty(i => i.FetchedAt, now), ct);
+
+        await db.RepoCache.Where(r => r.FullName == fullName)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.FetchedAt, now), ct);
+    }
+
     public async Task<CachedHealth?> GetHealthAsync(string fullName, CancellationToken ct = default)
     {
         await using var db = await contextFactory.CreateDbContextAsync(ct);
@@ -178,7 +190,8 @@ public sealed class EfRepoCache(
                         r.HealthBreakdown,
                         r.HealthComputedAt.Value,
                         IsFresh(r.HealthComputedAt.Value, CacheTtl.Health)),
-                issuesByRepo.GetValueOrDefault(r.FullName, [])))
+                issuesByRepo.GetValueOrDefault(r.FullName, []),
+                r.FetchedAt))
         ];
     }
 

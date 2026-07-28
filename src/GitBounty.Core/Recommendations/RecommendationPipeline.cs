@@ -69,7 +69,7 @@ public sealed class RecommendationPipeline(
 
         var withFreeIssues = await ForEachAsync(finalists, async (repo, token) =>
         {
-            var issues = await GetIssuesAsync(repo, token);
+            var (issues, fetchedAt) = await GetIssuesAsync(repo, token);
 
             var free = issues
                 .Where(i => !i.Issue.HasAssignee)
@@ -78,7 +78,7 @@ public sealed class RecommendationPipeline(
 
             // Repozytorium bez ani jednego wolnego issue wypada z listy: fakt
             // istnienia issue jest filtrem, nie punktami (SPEC §0.2).
-            return free.Length == 0 ? null : new FinalistIssues(repo, free);
+            return free.Length == 0 ? null : new FinalistIssues(repo, free, fetchedAt);
         }, ct);
 
         if (withFreeIssues.Count == 0)
@@ -88,11 +88,11 @@ public sealed class RecommendationPipeline(
 
         var scored = await ForEachAsync(withFreeIssues, async (entry, token) =>
         {
-            var health = await GetHealthAsync(entry.Repo, now, token);
+            var (health, healthComputedAt) = await GetHealthAsync(entry.Repo, now, token);
 
             var score = RepoScorer.Score(entry.Repo, profile, poolSizes, request.TargetStars, health);
 
-            return new Recommendation(entry.Repo, score, entry.Issues);
+            return new Recommendation(entry.Repo, score, entry.Issues, entry.FetchedAt, healthComputedAt);
         }, ct);
 
         var items = scored
@@ -107,7 +107,8 @@ public sealed class RecommendationPipeline(
     {
         try
         {
-            return await profiles.GetAsync(login, ct);
+            var result = await profiles.GetAsync(login, ct);
+            return (result.Profile, result.IsStale);
         }
         catch (GitHubUnavailableException)
         {
@@ -134,28 +135,35 @@ public sealed class RecommendationPipeline(
         return [.. candidates.Values.Where(IsUsable)];
     }
 
-    async Task<IReadOnlyList<ScoredIssue>> GetIssuesAsync(RepoCandidate repo, CancellationToken ct)
+    async Task<(IReadOnlyList<ScoredIssue> Issues, DateTimeOffset FetchedAt)> GetIssuesAsync(
+        RepoCandidate repo, CancellationToken ct)
     {
         var cached = await cache.GetIssuesAsync(repo.FullName, ct);
-        if (cached is { IsFresh: true }) return cached.Issues;
+        if (cached is { IsFresh: true }) return (cached.Issues, cached.FetchedAt);
 
         var result = await github.GetGoodFirstIssuesAsync(repo.FullName, cached?.ETag, ct);
 
-        // 304 nie zmniejsza limitu i oznacza, że cache jest nadal aktualny
-        if (result.NotModified && cached is not null) return cached.Issues;
+        // 304 nie zmniejsza limitu i oznacza, że cache jest nadal aktualny -
+        // więc znacznik idzie do przodu, inaczej dane wyglądałyby na stare mimo
+        // świeżej walidacji, a TTL wygasałby co godzinę bez końca.
+        if (result.NotModified && cached is not null)
+        {
+            await cache.TouchIssuesAsync(repo.FullName, ct);
+            return (cached.Issues, time.GetUtcNow());
+        }
 
         IReadOnlyList<ScoredIssue> issues =
             [.. (result.Value ?? []).Select(i => new ScoredIssue(i, DifficultyHeuristic.Estimate(i)))];
 
         await cache.SaveIssuesAsync(repo, issues, result.ETag, ct);
-        return issues;
+        return (issues, time.GetUtcNow());
     }
 
-    async Task<IReadOnlyList<ScoreComponent>?> GetHealthAsync(
+    async Task<(IReadOnlyList<ScoreComponent>? Components, DateTimeOffset? ComputedAt)> GetHealthAsync(
         RepoCandidate repo, DateTimeOffset now, CancellationToken ct)
     {
         var cached = await cache.GetHealthAsync(repo.FullName, ct);
-        if (cached is { IsFresh: true }) return cached.Breakdown;
+        if (cached is { IsFresh: true }) return (cached.Breakdown, cached.ComputedAt);
 
         try
         {
@@ -164,17 +172,17 @@ public sealed class RecommendationPipeline(
             var score = ScoreMath.Renormalize(components);
 
             await cache.SaveHealthAsync(repo, score, components, ct);
-            return components;
+            return (components, now);
         }
         catch (GitHubUnavailableException)
         {
-            return cached?.Breakdown;
+            return (cached?.Breakdown, cached?.ComputedAt);
         }
         catch (Exception)
         {
             // Pojedyncze repozytorium bez Health nadal trafia do wyniku - ocena
             // procentuje się po dostępnych komponentach, a Match ma komplet.
-            return cached?.Breakdown;
+            return (cached?.Breakdown, cached?.ComputedAt);
         }
     }
 
@@ -204,7 +212,9 @@ public sealed class RecommendationPipeline(
             .Select(c => new Recommendation(
                 c.Repo,
                 RepoScorer.Score(c.Repo, profile, poolSizes, request.TargetStars, c.Health?.Breakdown),
-                [.. c.Issues.Where(i => !i.Issue.HasAssignee)]))
+                [.. c.Issues.Where(i => !i.Issue.HasAssignee)],
+                c.FetchedAt,
+                c.Health?.ComputedAt))
             .OrderByDescending(r => r.Score.FinalScore)
             .Take(request.Limit)
             .ToArray();
@@ -254,4 +264,5 @@ public sealed class RecommendationPipeline(
     }
 }
 
-sealed record FinalistIssues(RepoCandidate Repo, IReadOnlyList<ScoredIssue> Issues);
+sealed record FinalistIssues(
+    RepoCandidate Repo, IReadOnlyList<ScoredIssue> Issues, DateTimeOffset FetchedAt);

@@ -16,7 +16,11 @@ public sealed record ScoredIssue(IssueSummary Issue, int Difficulty);
 public sealed record Recommendation(
     RepoCandidate Repo,
     RepoScore Score,
-    IReadOnlyList<ScoredIssue> Issues);
+    IReadOnlyList<ScoredIssue> Issues,
+    // Znaczniki z cache'u, nie czas odpowiedzi: banner „dane sprzed X godzin"
+    // ma mówić, kiedy dane powstały, a nie kiedy je przepisaliśmy do JSON-a.
+    DateTimeOffset RepoFetchedAt,
+    DateTimeOffset? HealthComputedAt);
 
 public sealed record RecommendationResult(
     UserProfile Profile,

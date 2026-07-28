@@ -6,6 +6,7 @@ bin/
 obj/
 node_modules/
 dist/
+.smoke/
 .vs/
 .idea/
 .DS_Store

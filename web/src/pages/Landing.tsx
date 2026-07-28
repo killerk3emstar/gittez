@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { LanguageChips } from '../components/LanguageChips'
 import { ErrorState } from '../components/states/ErrorState'
 import { LineSkeleton } from '../components/states/Skeleton'
@@ -16,19 +16,39 @@ const difficultyOptions = [
 export function Landing() {
   const navigate = useNavigate()
 
-  const [login, setLogin] = useState('')
-  const [submitted, setSubmitted] = useState('')
-  const [languages, setLanguages] = useState<string[]>([])
-  const [stopIndex, setStopIndex] = useState(nearestStopIndex(500))
-  const [maxDifficulty, setMaxDifficulty] = useState<number | null>(null)
+  // Powrót z wyników („Zmień kryteria") wraca z kompletem parametrów, więc
+  // login i zaznaczone chipy nie znikają przy każdej poprawce jednego suwaka.
+  const [params] = useSearchParams()
+  const restored = useRef(params.get('languages') !== null)
+
+  const [login, setLogin] = useState(params.get('login') ?? '')
+  const [submitted, setSubmitted] = useState(params.get('login') ?? '')
+  const [languages, setLanguages] = useState<string[]>(() =>
+    (params.get('languages') ?? '')
+      .split(',')
+      .map((l) => l.trim())
+      .filter(Boolean),
+  )
+  const [stopIndex, setStopIndex] = useState(nearestStopIndex(Number(params.get('targetStars')) || 500))
+  const [maxDifficulty, setMaxDifficulty] = useState<number | null>(() => {
+    const raw = params.get('maxDifficulty')
+    return raw === null || Number.isNaN(Number(raw)) ? null : Number(raw)
+  })
 
   const profile = useProfile(submitted)
   const detected = profile.data?.data.languages ?? []
 
   useEffect(() => {
-    // Trzy pierwsze języki zaznaczone z góry - użytkownik odznacza, a nie
-    // zaczyna od pustej listy.
-    if (profile.data) setLanguages(profile.data.data.languages.slice(0, 3).map((l) => l.name))
+    if (!profile.data) return
+
+    // Wybór odtworzony z adresu wygrywa z automatycznym zaznaczeniem, ale tylko
+    // raz: analiza kolejnego loginu ma znów zaproponować jego trzy języki.
+    if (restored.current) {
+      restored.current = false
+      return
+    }
+
+    setLanguages(profile.data.data.languages.slice(0, 3).map((l) => l.name))
   }, [profile.data])
 
   const targetStars = starStops[stopIndex]

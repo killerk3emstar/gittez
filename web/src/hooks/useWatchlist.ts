@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, ApiError, type Fresh } from '../api/client'
+import { api, type Fresh } from '../api/client'
 import type { WatchlistItem } from '../api/types'
 
 const key = ['watchlist']
@@ -50,12 +50,11 @@ export function useAddToWatchlist() {
       return { previous }
     },
 
-    onError: (error, _variables, context) => {
+    // Optymistyczny wiersz wraca skąd przyszedł, a onSettled i tak dociąga
+    // prawdę z serwera - również przy 409, gdzie stan po odświeżeniu jest
+    // poprawny mimo błędu.
+    onError: (_error, _variables, context) => {
       if (context?.previous) client.setQueryData(key, context.previous)
-
-      // 409 znaczy, że repo już tam jest - stan po odświeżeniu i tak będzie
-      // poprawny, więc nie ma czego cofać poza optymistycznym wierszem.
-      if (error instanceof ApiError && error.code === 'already-on-watchlist') return
     },
 
     onSettled: () => client.invalidateQueries({ queryKey: key }),

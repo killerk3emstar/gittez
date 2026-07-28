@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { WatchlistItem } from '../api/types'
 import { EmptyState } from '../components/states/EmptyState'
-import { ErrorState } from '../components/states/ErrorState'
+import { ErrorState, InlineError } from '../components/states/ErrorState'
 import { LineSkeleton } from '../components/states/Skeleton'
 import { useRemoveFromWatchlist, useUpdateNote, useWatchlist } from '../hooks/useWatchlist'
 import { formatAgo, formatStars } from '../lib/format'
@@ -109,6 +109,18 @@ function WatchlistRow({ item }: { item: WatchlistItem }) {
           Usuń
         </button>
       </div>
+
+      {(update.isError || remove.isError) && (
+        <div className="mt-4">
+          <InlineError
+            error={update.error ?? remove.error}
+            onDismiss={() => {
+              update.reset()
+              remove.reset()
+            }}
+          />
+        </div>
+      )}
 
       <div className="mt-4">
         {editing ? (

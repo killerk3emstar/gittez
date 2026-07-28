@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { RepoCard } from '../components/RepoCard'
 import { ScoreBreakdown } from '../components/ScoreBreakdown'
 import { EmptyState } from '../components/states/EmptyState'
-import { ErrorState } from '../components/states/ErrorState'
+import { ErrorState, InlineError } from '../components/states/ErrorState'
 import { ResultsSkeleton } from '../components/states/Skeleton'
 import { StaleBanner } from '../components/states/StaleBanner'
 import { useRecommendations } from '../hooks/useRecommendations'
@@ -20,7 +20,10 @@ export function Results() {
     const login = params.get('login')?.trim()
     if (!login) return null
 
-    const maxDifficulty = params.get('maxDifficulty')
+    // Ręcznie sklejony adres nie może wysłać "NaN" do API - backend odbiłby to
+    // czterysetką z bindera, a użytkownik zobaczyłby błąd bez wyjaśnienia.
+    const raw = params.get('maxDifficulty')
+    const maxDifficulty = raw !== null && Number.isFinite(Number(raw)) ? Number(raw) : null
 
     return {
       login,
@@ -29,7 +32,7 @@ export function Results() {
         .map((l) => l.trim())
         .filter(Boolean),
       targetStars: Number(params.get('targetStars') ?? 500) || 500,
-      maxDifficulty: maxDifficulty === null ? null : Number(maxDifficulty),
+      maxDifficulty,
     }
   }, [params])
 
@@ -63,7 +66,7 @@ export function Results() {
       <header className="mb-8">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h1 className="text-2xl font-semibold text-white">Rekomendacje dla {query.login}</h1>
-          <Link to="/" className="text-sm text-ink-400 transition hover:text-ink-200">
+          <Link to={`/?${params}`} className="text-sm text-ink-400 transition hover:text-ink-200">
             Zmień kryteria
           </Link>
         </div>
@@ -113,6 +116,12 @@ export function Results() {
           <p className="mb-5 rounded-xl border border-ink-800 bg-ink-900/40 px-4 py-3 text-sm text-ink-400">
             Wszystkie wyniki mają co najmniej jedno nieprzypisane issue.
           </p>
+
+          {add.isError && (
+            <div className="mb-5">
+              <InlineError error={add.error} onDismiss={() => add.reset()} />
+            </div>
+          )}
 
           <div className="grid gap-4 lg:grid-cols-2">
             {items.map((item) => (
