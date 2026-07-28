@@ -25,7 +25,14 @@ public static class ServiceCollectionExtensions
 
         var dataSource = dataSourceBuilder.Build();
         services.AddSingleton(dataSource);
-        services.AddDbContext<GitBountyDbContext>(o => o.UseNpgsql(dataSource));
+
+        // Fabryka, bo pipeline czyta cache z ośmiu zadań naraz; zakresowy
+        // kontekst zostaje dla endpointów, które i tak są jednowątkowe.
+        services.AddDbContextFactory<GitBountyDbContext>(o => o.UseNpgsql(dataSource));
+        services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<GitBountyDbContext>>().CreateDbContext());
+
+        services.AddScoped<IRepoCache, EfRepoCache>();
+        services.AddScoped<DatabaseSeeder>();
 
         return services;
     }

@@ -51,6 +51,16 @@ public class MatchScorerTests
         Assert.Equal(30, component.Points);
     }
 
+    // Tryb awaryjny: bez tokenu i bez cache'u profil jest pusty, a zero
+    // punktów byłoby karą za nasz brak danych.
+    [Fact]
+    public void Language_przy_pustym_profilu_daje_null()
+    {
+        var component = MatchScorer.Language(Build.Repo(language: "Swift"), Build.User(languages: []));
+
+        Assert.Null(component.Points);
+    }
+
     [Fact]
     public void Complexity_najmniejsze_repo_w_puli_dostaje_maksimum()
     {

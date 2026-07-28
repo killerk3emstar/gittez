@@ -1,5 +1,6 @@
 using GitBounty.Api.Contracts;
 using GitBounty.Core.Abstractions;
+using GitBounty.Core.Models;
 using GitBounty.Infrastructure.Persistence;
 
 namespace GitBounty.Api.Endpoints;
@@ -25,12 +26,10 @@ public static class HealthEndpoints
                 error = ex.Message;
             }
 
-            var limit = rateLimit.Current;
-
             var response = new HealthResponse(
                 canConnect ? "healthy" : "degraded",
                 new DatabaseHealth(canConnect, error),
-                limit is null ? null : new RateLimitHealth(limit.Remaining, limit.Used, limit.ResetAt));
+                new RateLimitHealth(Pool(rateLimit.Core), Pool(rateLimit.Search)));
 
             return Results.Json(response, statusCode: canConnect ? 200 : 503);
         })
@@ -39,4 +38,7 @@ public static class HealthEndpoints
 
         return app;
     }
+
+    static RateLimitPoolHealth? Pool(RateLimitSnapshot? snapshot) =>
+        snapshot is null ? null : new(snapshot.Remaining, snapshot.Limit, snapshot.Used, snapshot.ResetAt);
 }

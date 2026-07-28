@@ -11,8 +11,9 @@ public static class RecommendationEndpoints
             string login,
             RecommendationPipeline pipeline,
             TimeProvider time,
+            HttpContext http,
             string? languages,
-            int targetStars,
+            int? targetStars,
             int? maxDifficulty,
             int? limit,
             CancellationToken ct) =>
@@ -21,12 +22,16 @@ public static class RecommendationEndpoints
                 login,
                 [.. (languages ?? string.Empty)
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)],
-                targetStars is > 0 ? targetStars : 500,
+                targetStars is > 0 ? targetStars.Value : 500,
                 maxDifficulty,
                 Math.Clamp(limit ?? 10, 1, 25));
 
             var result = await pipeline.RunAsync(request, ct);
             var now = time.GetUtcNow();
+
+            // Limit wyczerpany, ale cache ma dane: 200 z nagłówkiem, nie 503
+            // (SPEC §7.3). 503 leci dopiero, gdy nie mamy czym poratować.
+            if (result.IsStale) http.Response.Headers["X-Data-Stale"] = "true";
 
             return Results.Ok(new RecommendationsResponse(
                 [.. result.Items.Select(item => ToItem(item, now))],

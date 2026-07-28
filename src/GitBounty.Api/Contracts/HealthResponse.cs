@@ -7,6 +7,9 @@ public sealed record HealthResponse(
 
 public sealed record DatabaseHealth(bool CanConnect, string? Error);
 
-// Wypełniane od M3 z nagłówków X-RateLimit-* realnych odpowiedzi GitHuba;
-// endpoint /rate_limit raportuje nieaktualne dane (SPEC §4.4 pkt 12).
-public sealed record RateLimitHealth(int Remaining, int Used, DateTimeOffset ResetAt);
+// Z nagłówków X-RateLimit-* realnych odpowiedzi GitHuba; endpoint /rate_limit
+// raportuje nieaktualne dane (SPEC §4.4 pkt 12). Pule core i search mają
+// osobne liczniki i osobne okna resetu.
+public sealed record RateLimitHealth(RateLimitPoolHealth? Core, RateLimitPoolHealth? Search);
+
+public sealed record RateLimitPoolHealth(int Remaining, int Limit, int Used, DateTimeOffset ResetAt);

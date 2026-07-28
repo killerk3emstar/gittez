@@ -41,6 +41,15 @@ public static class MatchScorer
                 "repozytorium nie ma ustawionego języka głównego");
         }
 
+        // Pusty profil zdarza się w trybie awaryjnym, gdy GitHub jest
+        // niedostępny i nie mamy z czego wykryć języków. Zero byłoby wtedy
+        // karą za nasz brak danych, nie za niedopasowanie.
+        if (user.Languages.Count == 0)
+        {
+            return new(key, label, null, LanguageMax, repo.PrimaryLanguage,
+                "nie znamy Twoich języków, nie ma czego porównać");
+        }
+
         var lang = repo.PrimaryLanguage;
         var rank = -1;
         for (var i = 0; i < user.Languages.Count; i++)

@@ -19,6 +19,8 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY --from=build /app/publish .
+# seed jest wczytywany przez DatabaseSeeder po migracjach, nie przez initdb
+COPY db/seed/ db/seed/
 USER $APP_UID
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "GitBounty.Api.dll"]

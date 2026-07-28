@@ -60,7 +60,7 @@ public sealed class GitHubClient(
         return [.. items.Select(ToCandidate)];
     }
 
-    public async Task<GitHubResult<IReadOnlyList<IssueSummary>>> GetFreeGoodFirstIssuesAsync(
+    public async Task<GitHubResult<IReadOnlyList<IssueSummary>>> GetGoodFirstIssuesAsync(
         string fullName, string? etag = null, CancellationToken ct = default)
     {
         var label = Uri.EscapeDataString("good first issue");
@@ -69,12 +69,11 @@ public sealed class GitHubClient(
 
         if (result.NotModified) return new(null, result.ETag, true);
 
+        // Odsiew po przypisaniu robi pipeline, tutaj wypadają tylko elementy,
+        // które w istocie są pull requestami (SPEC §4.4 pkt 5).
         IReadOnlyList<IssueSummary> issues =
         [
-            .. (result.Value ?? [])
-                .Where(i => i.PullRequest is null)
-                .Where(i => (i.Assignees?.Count ?? 0) == 0)
-                .Select(ToIssue)
+            .. (result.Value ?? []).Where(i => i.PullRequest is null).Select(ToIssue)
         ];
 
         return new(issues, result.ETag, false);
@@ -107,20 +106,26 @@ public sealed class GitHubClient(
         if (!string.IsNullOrEmpty(etag)) request.Headers.TryAddWithoutValidation("If-None-Match", etag);
 
         using var response = await http.SendAsync(request, ct);
-        rateLimit.Observe(response);
 
-        logger.LogDebug("GET {Path} -> {Status}, limit {Remaining}/{Limit}",
-            path, (int)response.StatusCode, rateLimit.Current?.Remaining, rateLimit.Current?.Limit);
+        var pool = path.StartsWith("search/", StringComparison.Ordinal) ? RateLimitPool.Search : RateLimitPool.Core;
+        rateLimit.Observe(response, pool);
+
+        logger.LogDebug("GET {Path} -> {Status}, pula {Pool}, zostało {Remaining}",
+            path, (int)response.StatusCode, pool,
+            (pool == RateLimitPool.Search ? rateLimit.Search : rateLimit.Core)?.Remaining);
 
         // 304 nie zmniejsza limitu
         if (response.StatusCode == HttpStatusCode.NotModified) return new(default, etag, true);
 
         if (response.StatusCode == HttpStatusCode.NotFound) throw new GitHubNotFoundException(path);
 
+        if (response.StatusCode == HttpStatusCode.Unauthorized) throw new GitHubUnauthorizedException();
+
         if (IsRateLimited(response))
         {
             throw new GitHubRateLimitExceededException(
-                rateLimit.Current?.ResetAt ?? DateTimeOffset.UtcNow.AddMinutes(1));
+                (pool == RateLimitPool.Search ? rateLimit.Search : rateLimit.Core)?.ResetAt
+                    ?? DateTimeOffset.UtcNow.AddMinutes(1));
         }
 
         response.EnsureSuccessStatusCode();

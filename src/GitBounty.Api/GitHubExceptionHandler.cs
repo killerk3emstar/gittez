@@ -20,6 +20,16 @@ public sealed class GitHubExceptionHandler(ILogger<GitHubExceptionHandler> logge
                     statusCode: StatusCodes.Status404NotFound).ExecuteAsync(context);
                 return true;
 
+            case GitHubUnauthorizedException unauthorized:
+                logger.LogError("Token GitHuba odrzucony, a cache nie miał czym poratować");
+
+                await Results.Problem(
+                    type: "github-unavailable",
+                    title: "GitHub jest niedostępny",
+                    detail: unauthorized.Message,
+                    statusCode: StatusCodes.Status503ServiceUnavailable).ExecuteAsync(context);
+                return true;
+
             case GitHubRateLimitExceededException limited:
                 logger.LogWarning("Limit GitHub API wyczerpany, reset {ResetAt}", limited.ResetAt);
 

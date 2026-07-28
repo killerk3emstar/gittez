@@ -36,7 +36,7 @@ public class ScoreMathTests
         var user = Build.User(languages: [new UserLanguage("C#", 7, 2)], interests: ["blazor"]);
         var repo = Build.Repo(language: "C#", topics: ["blazor"], sizeKb: 100);
 
-        var score = RepoScorer.Score(repo, user, [100, 500, 1_000], targetStars: 500, health: null, Build.Now);
+        var score = RepoScorer.Score(repo, user, [100, 500, 1_000], targetStars: 500, healthComponents: null);
 
         Assert.Null(score.HealthScore);
         Assert.Empty(score.HealthBreakdown);

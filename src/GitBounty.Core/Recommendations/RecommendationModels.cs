@@ -21,4 +21,7 @@ public sealed record Recommendation(
 public sealed record RecommendationResult(
     UserProfile Profile,
     IReadOnlyList<Recommendation> Items,
+    // Odpowiedź poszła z cache'u mimo wygasłego TTL, bo GitHub był
+    // niedostępny; API dokłada wtedy nagłówek X-Data-Stale (SPEC §7.3).
+    bool IsStale,
     IReadOnlyList<string> Hints);

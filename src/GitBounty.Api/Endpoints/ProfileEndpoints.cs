@@ -1,5 +1,4 @@
 using GitBounty.Api.Contracts;
-using GitBounty.Core.Abstractions;
 using GitBounty.Core.Models;
 using GitBounty.Core.Profiles;
 
@@ -11,11 +10,11 @@ public static class ProfileEndpoints
     {
         app.MapGet("/api/profile/{login}", async (
             string login,
-            IGitHubClient github,
+            ProfileProvider profiles,
+            HttpContext http,
             CancellationToken ct) =>
         {
-            var repos = await github.GetOwnedReposAsync(login, ct);
-            var profile = ProfileBuilder.Build(login, repos);
+            var (profile, isStale) = await profiles.GetAsync(login, ct);
 
             if (profile.PublicRepoCount == 0)
             {
@@ -25,6 +24,8 @@ public static class ProfileEndpoints
                     detail: $"Użytkownik {login} nie ma publicznych repozytoriów, z których dałoby się wyliczyć języki.",
                     statusCode: StatusCodes.Status422UnprocessableEntity);
             }
+
+            if (isStale) http.Response.Headers["X-Data-Stale"] = "true";
 
             return Results.Ok(ToResponse(profile));
         })

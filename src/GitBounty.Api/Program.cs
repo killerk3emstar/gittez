@@ -1,5 +1,6 @@
 using GitBounty.Api;
 using GitBounty.Api.Endpoints;
+using GitBounty.Core.Profiles;
 using GitBounty.Core.Recommendations;
 using GitBounty.Infrastructure;
 using GitBounty.Infrastructure.Persistence;
@@ -14,6 +15,7 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 builder.Services.AddGitBountyPersistence(connectionString);
 builder.Services.AddGitHubClient(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<ProfileProvider>();
 builder.Services.AddScoped<RecommendationPipeline>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GitHubExceptionHandler>();
@@ -26,6 +28,12 @@ if (app.Configuration.GetValue("APPLY_MIGRATIONS", false))
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<GitBountyDbContext>();
     await db.Database.MigrateAsync();
+
+    if (app.Configuration.GetValue("SEED_ON_STARTUP", false))
+    {
+        var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+        await seeder.SeedAsync(Path.Combine(app.Environment.ContentRootPath, "db", "seed", "repo_cache_seed.sql"));
+    }
 }
 
 app.UseExceptionHandler();
