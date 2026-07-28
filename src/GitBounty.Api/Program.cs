@@ -1,3 +1,4 @@
+using GitBounty.Api;
 using GitBounty.Api.Endpoints;
 using GitBounty.Infrastructure;
 using GitBounty.Infrastructure.Persistence;
@@ -10,7 +11,9 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Brak connection stringa - ustaw ConnectionStrings__Default");
 
 builder.Services.AddGitBountyPersistence(connectionString);
+builder.Services.AddGitHubClient(builder.Configuration);
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GitHubExceptionHandler>();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -28,5 +31,6 @@ app.UseStatusCodePages();
 app.MapOpenApi();
 app.MapScalarApiReference();
 app.MapHealthEndpoints();
+app.MapProfileEndpoints();
 
 app.Run();
