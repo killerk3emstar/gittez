@@ -1,0 +1,11 @@
+.env
+.env.local
+*.env
+
+bin/
+obj/
+node_modules/
+dist/
+.vs/
+.idea/
+.DS_Store
