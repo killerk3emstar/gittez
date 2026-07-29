@@ -43,6 +43,19 @@ public sealed class GitHubExceptionHandler(ILogger<GitHubExceptionHandler> logge
                     statusCode: StatusCodes.Status503ServiceUnavailable).ExecuteAsync(context);
                 return true;
 
+            // Zerwane połączenie, timeout albo 5xx po ponowieniach. Zapytania,
+            // które mają czym poratować, schodzą wcześniej na cache i tu nie
+            // docierają - zostaje profil bez niczego w cache'u.
+            case GitHubUnavailableException unavailable:
+                logger.LogWarning(unavailable, "GitHub nie odpowiedział, a cache nie miał czym poratować");
+
+                await Results.Problem(
+                    type: "github-unavailable",
+                    title: "GitHub jest niedostępny",
+                    detail: unavailable.Message,
+                    statusCode: StatusCodes.Status503ServiceUnavailable).ExecuteAsync(context);
+                return true;
+
             default:
                 return false;
         }

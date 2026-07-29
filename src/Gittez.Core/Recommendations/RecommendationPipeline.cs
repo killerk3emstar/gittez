@@ -41,17 +41,31 @@ public sealed class RecommendationPipeline(
 
         var (starsLo, starsHi) = ScoreMath.StarBand(request.TargetStars);
 
-        IReadOnlyList<RepoCandidate> pool;
         try
         {
-            pool = await SearchAsync(languages, starsLo, starsHi, ct);
+            return await RunLiveAsync(request, profile, profileIsStale, languages, starsLo, starsHi, now, ct);
         }
         catch (GitHubUnavailableException)
         {
             // Dopóki cache cokolwiek zawiera, serwujemy stare dane - puste demo
             // z komunikatem o błędzie jest gorsze niż lekko nieświeże dane.
+            // Klamra obejmuje cały przebieg, nie samo wyszukiwanie: limit potrafi
+            // się wyczerpać dopiero przy pobieraniu issues.
             return await FromCacheAsync(profile, request, languages, starsLo, starsHi, ct);
         }
+    }
+
+    async Task<RecommendationResult> RunLiveAsync(
+        RecommendationRequest request,
+        UserProfile profile,
+        bool profileIsStale,
+        IReadOnlyList<string> languages,
+        int starsLo,
+        int starsHi,
+        DateTimeOffset now,
+        CancellationToken ct)
+    {
+        var pool = await SearchAsync(languages, starsLo, starsHi, ct);
 
         if (pool.Count == 0)
         {
@@ -69,16 +83,13 @@ public sealed class RecommendationPipeline(
 
         var withFreeIssues = await ForEachAsync(finalists, async (repo, token) =>
         {
-            var (issues, fetchedAt) = await GetIssuesAsync(repo, token);
+            if (await TryGetIssuesAsync(repo, token) is not { } fetched) return null;
 
-            var free = issues
-                .Where(i => !i.Issue.HasAssignee)
-                .Where(i => request.MaxDifficulty is null || i.Difficulty <= request.MaxDifficulty)
-                .ToArray();
+            var free = fetched.Issues.Where(i => IsTakeable(i, request)).ToArray();
 
             // Repozytorium bez ani jednego wolnego issue wypada z listy: fakt
             // istnienia issue jest filtrem, nie punktami (SPEC §0.2).
-            return free.Length == 0 ? null : new FinalistIssues(repo, free, fetchedAt);
+            return free.Length == 0 ? null : new FinalistIssues(repo, free, fetched.FetchedAt);
         }, ct);
 
         if (withFreeIssues.Count == 0)
@@ -135,6 +146,30 @@ public sealed class RecommendationPipeline(
         return [.. candidates.Values.Where(IsUsable)];
     }
 
+    // Repozytorium, które zniknęło albo nie odpowiedziało, wypada z listy zamiast
+    // wywracać cały przebieg - tak samo jak przy Health. Niedostępność całego
+    // GitHuba leci wyżej, bo tam odpowiedzią jest cache, a nie krótsza lista.
+    async Task<(IReadOnlyList<ScoredIssue> Issues, DateTimeOffset FetchedAt)?> TryGetIssuesAsync(
+        RepoCandidate repo, CancellationToken ct)
+    {
+        try
+        {
+            return await GetIssuesAsync(repo, ct);
+        }
+        catch (GitHubUnavailableException)
+        {
+            throw;
+        }
+        catch (Exception) when (!ct.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
+
+    static bool IsTakeable(ScoredIssue issue, RecommendationRequest request) =>
+        !issue.Issue.HasAssignee
+        && (request.MaxDifficulty is null || issue.Difficulty <= request.MaxDifficulty);
+
     async Task<(IReadOnlyList<ScoredIssue> Issues, DateTimeOffset FetchedAt)> GetIssuesAsync(
         RepoCandidate repo, CancellationToken ct)
     {
@@ -178,7 +213,7 @@ public sealed class RecommendationPipeline(
         {
             return (cached?.Breakdown, cached?.ComputedAt);
         }
-        catch (Exception)
+        catch (Exception) when (!ct.IsCancellationRequested)
         {
             // Pojedyncze repozytorium bez Health nadal trafia do wyniku - ocena
             // procentuje się po dostępnych komponentach, a Match ma komplet.
@@ -196,25 +231,33 @@ public sealed class RecommendationPipeline(
     {
         var cached = await cache.GetCandidatesAsync(languages, starsLo, starsHi, FinalistCount * 4, ct);
 
+        // Ten sam filtr co na żywo: prośba o łatwe issues nie może zniknąć tylko
+        // dlatego, że dane przyszły z cache'u.
         var usable = cached
-            .Where(c => c.Issues.Any(i => !i.Issue.HasAssignee))
+            .Select(c => (Candidate: c, Issues: c.Issues.Where(i => IsTakeable(i, request)).ToArray()))
+            .Where(x => x.Issues.Length > 0)
             .ToArray();
 
         if (usable.Length == 0)
         {
-            return new RecommendationResult(profile, [], true,
-                ["Nie mamy świeżych danych z GitHuba ani niczego w cache'u dla tych języków."]);
+            IReadOnlyList<string> hints = cached.Count == 0
+                ? ["Nie mamy świeżych danych z GitHuba ani niczego w cache'u dla tych języków."]
+                : [.. Hints(request, foundCandidates: true)
+                    .Prepend("Odpowiadamy z cache'u, bo GitHub jest teraz niedostępny.")];
+
+            return new RecommendationResult(profile, [], true, hints);
         }
 
-        var poolSizes = usable.Select(c => c.Repo.SizeKb).ToArray();
+        var poolSizes = usable.Select(x => x.Candidate.Repo.SizeKb).ToArray();
 
         var items = usable
-            .Select(c => new Recommendation(
-                c.Repo,
-                RepoScorer.Score(c.Repo, profile, poolSizes, request.TargetStars, c.Health?.Breakdown),
-                [.. c.Issues.Where(i => !i.Issue.HasAssignee)],
-                c.FetchedAt,
-                c.Health?.ComputedAt))
+            .Select(x => new Recommendation(
+                x.Candidate.Repo,
+                RepoScorer.Score(
+                    x.Candidate.Repo, profile, poolSizes, request.TargetStars, x.Candidate.Health?.Breakdown),
+                x.Issues,
+                x.Candidate.FetchedAt,
+                x.Candidate.Health?.ComputedAt))
             .OrderByDescending(r => r.Score.FinalScore)
             .Take(request.Limit)
             .ToArray();
