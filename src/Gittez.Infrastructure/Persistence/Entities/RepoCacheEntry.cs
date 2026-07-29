@@ -14,6 +14,11 @@ public class RepoCacheEntry
     public string? ETag { get; set; }
 
     public DateTimeOffset FetchedAt { get; set; }
+
+    // Osobno od FetchedAt, bo repozytorium bez ani jednego good first issue nie
+    // zostawia wierszy w issue_cache: bez tego znacznika wyglądałoby na nigdy
+    // niesprawdzone i zjadało wywołanie w każdym przebiegu.
+    public DateTimeOffset? IssuesFetchedAt { get; set; }
     public decimal? HealthScore { get; set; }
     public List<ScoreComponent>? HealthBreakdown { get; set; }
     public DateTimeOffset? HealthComputedAt { get; set; }

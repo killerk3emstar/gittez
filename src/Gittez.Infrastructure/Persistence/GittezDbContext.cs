@@ -36,6 +36,7 @@ public class GittezDbContext(DbContextOptions<GittezDbContext> options) : DbCont
             AsJson(e.Property(x => x.Data).HasColumnName("data"));
             e.Property(x => x.ETag).HasColumnName("etag").HasMaxLength(128);
             e.Property(x => x.FetchedAt).HasColumnName("fetched_at");
+            e.Property(x => x.IssuesFetchedAt).HasColumnName("issues_fetched_at");
             e.Property(x => x.HealthScore).HasColumnName("health_score").HasPrecision(5, 2);
             AsJson(e.Property(x => x.HealthBreakdown).HasColumnName("health_breakdown")!);
             e.Property(x => x.HealthComputedAt).HasColumnName("health_computed_at");
