@@ -27,14 +27,13 @@ public static class RecommendationEndpoints
                 Math.Clamp(limit ?? 10, 1, 25));
 
             var result = await pipeline.RunAsync(request, ct);
-            var now = time.GetUtcNow();
 
             // Limit wyczerpany, ale cache ma dane: 200 z nagłówkiem, nie 503
             // (SPEC §7.3). 503 leci dopiero, gdy nie mamy czym poratować.
             if (result.IsStale) http.Response.Headers["X-Data-Stale"] = "true";
 
             return Results.Ok(new RecommendationsResponse(
-                [.. result.Items.Select(item => ToItem(item, now))],
+                [.. result.Items.Select(ToItem)],
                 result.Hints));
         })
         .WithName("GetRecommendations")
@@ -43,7 +42,7 @@ public static class RecommendationEndpoints
         return app;
     }
 
-    static RecommendationItem ToItem(Recommendation recommendation, DateTimeOffset now)
+    static RecommendationItem ToItem(Recommendation recommendation)
     {
         var repo = recommendation.Repo;
         var score = recommendation.Score;
@@ -69,6 +68,6 @@ public static class RecommendationEndpoints
                 i.Issue.CommentCount,
                 i.Difficulty,
                 i.Issue.UpdatedAt))],
-            new DataFreshness(now, score.HealthScore is null ? null : now));
+            new DataFreshness(recommendation.RepoFetchedAt, recommendation.HealthComputedAt));
     }
 }

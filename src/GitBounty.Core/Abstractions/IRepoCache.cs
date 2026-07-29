@@ -11,6 +11,11 @@ public interface IRepoCache
     Task<CachedIssues?> GetIssuesAsync(string fullName, CancellationToken ct = default);
     Task SaveIssuesAsync(RepoCandidate repo, IReadOnlyList<ScoredIssue> issues, string? etag, CancellationToken ct = default);
 
+    // Odpowiedź 304 to potwierdzenie aktualności, nie brak zdarzenia: bez
+    // odświeżenia znacznika dane wyglądają na stare mimo świeżej walidacji,
+    // a TTL wygasa co godzinę na okrągło (RFC 9111 §4.3.4).
+    Task TouchIssuesAsync(string fullName, CancellationToken ct = default);
+
     Task<CachedHealth?> GetHealthAsync(string fullName, CancellationToken ct = default);
     Task SaveHealthAsync(RepoCandidate repo, double? score, IReadOnlyList<ScoreComponent> breakdown, CancellationToken ct = default);
 
@@ -37,4 +42,4 @@ public sealed record CachedHealth(
     double? Score, IReadOnlyList<ScoreComponent> Breakdown, DateTimeOffset ComputedAt, bool IsFresh);
 
 public sealed record CachedCandidate(
-    RepoCandidate Repo, CachedHealth? Health, IReadOnlyList<ScoredIssue> Issues);
+    RepoCandidate Repo, CachedHealth? Health, IReadOnlyList<ScoredIssue> Issues, DateTimeOffset FetchedAt);

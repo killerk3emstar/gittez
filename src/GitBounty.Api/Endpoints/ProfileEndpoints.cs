@@ -14,7 +14,7 @@ public static class ProfileEndpoints
             HttpContext http,
             CancellationToken ct) =>
         {
-            var (profile, isStale) = await profiles.GetAsync(login, ct);
+            var (profile, isStale, computedAt) = await profiles.GetAsync(login, ct);
 
             if (profile.PublicRepoCount == 0)
             {
@@ -27,7 +27,7 @@ public static class ProfileEndpoints
 
             if (isStale) http.Response.Headers["X-Data-Stale"] = "true";
 
-            return Results.Ok(ToResponse(profile));
+            return Results.Ok(ToResponse(profile, computedAt));
         })
         .WithName("GetProfile")
         .WithSummary("Profil użytkownika z wykrytymi językami i tematami");
@@ -35,11 +35,11 @@ public static class ProfileEndpoints
         return app;
     }
 
-    static ProfileResponse ToResponse(UserProfile profile) => new(
+    static ProfileResponse ToResponse(UserProfile profile, DateTimeOffset computedAt) => new(
         profile.Login,
         profile.PublicRepoCount,
         profile.MedianSizeKb,
         [.. profile.Languages.Select((l, i) => new ProfileLanguageResponse(l.Name, l.OwnedRepos, l.ContributedRepos, i + 1))],
         profile.Interests,
-        DateTimeOffset.UtcNow);
+        computedAt);
 }

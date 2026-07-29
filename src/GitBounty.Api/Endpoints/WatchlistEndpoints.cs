@@ -9,6 +9,10 @@ public static class WatchlistEndpoints
 {
     const int MaxNoteLength = 500;
 
+    // Demo jest publiczne i bez logowania, więc pojedyncza sesja mogłaby wstawić
+    // dowolnie wiele wierszy. Sto pozycji to znacznie więcej, niż da się przejrzeć.
+    const int MaxItemsPerSession = 100;
+
     public static IEndpointRouteBuilder MapWatchlistEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/watchlist").WithTags("Watchlist");
@@ -65,6 +69,9 @@ public static class WatchlistEndpoints
                 .AnyAsync(i => i.SessionId == sessionId && i.RepoFullName.ToLower() == fullName.ToLower(), ct);
 
             if (duplicate) return AlreadyOnWatchlist(fullName);
+
+            var count = await db.WatchlistItems.CountAsync(i => i.SessionId == sessionId, ct);
+            if (count >= MaxItemsPerSession) return WatchlistFull();
 
             var now = time.GetUtcNow();
             await TouchSessionAsync(db, sessionId, now, ct);
@@ -190,6 +197,12 @@ public static class WatchlistEndpoints
         type: "already-on-watchlist",
         title: "Repozytorium jest już na watchliście",
         detail: $"{fullName} zostało już zapisane w tej sesji.",
+        statusCode: StatusCodes.Status409Conflict);
+
+    static IResult WatchlistFull() => Results.Problem(
+        type: "watchlist-full",
+        title: "Watchlista jest pełna",
+        detail: $"Jedna sesja mieści {MaxItemsPerSession} pozycji. Usuń coś, żeby zrobić miejsce.",
         statusCode: StatusCodes.Status409Conflict);
 
     static IResult NoteTooLong() => Results.Problem(
