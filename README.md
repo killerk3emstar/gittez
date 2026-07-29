@@ -9,6 +9,9 @@ Czas realizacji około 1,5 dnia.
 
 Demo: `https://gittez-web-production.up.railway.app/`
 
+<img width="1452" height="902" alt="Screenshot 2026-07-29 at 11 50 39 PM" src="https://github.com/user-attachments/assets/2e9b657e-9921-481e-8add-a7f714946b5e" />
+
+<img width="1451" height="899" alt="Screenshot 2026-07-29 at 11 53 16 PM" src="https://github.com/user-attachments/assets/a5f024c8-0d28-4201-8295-f7184733d922" />
 
 
 ## Problem
