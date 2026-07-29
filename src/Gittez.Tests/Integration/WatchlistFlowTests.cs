@@ -90,6 +90,28 @@ public class WatchlistFlowTests(GittezApp app) : IClassFixture<GittezApp>
         Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
     }
 
+    // Nazwa wklepana małymi literami ma zwrócić te same metadane co lista, która
+    // zestawia je bez rozróżniania wielkości liter.
+    [Fact]
+    public async Task Zapis_nazwy_w_innym_zapisie_liter_zwraca_metadane_z_cachu()
+    {
+        var client = app.CreateClientWithSchema();
+        var session = Guid.NewGuid();
+
+        await app.WithDatabaseAsync(async db =>
+        {
+            if (!await db.RepoCache.AnyAsync(r => r.FullName == Repo)) db.RepoCache.Add(CachedRepo());
+        });
+
+        var created = await client.SendAsync(Post(session, new CreateWatchlistItemRequest(Repo.ToLowerInvariant(), null)));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        var item = (await created.Content.ReadFromJsonAsync<WatchlistItemResponse>())!;
+
+        Assert.NotNull(item.Repo);
+        Assert.Equal(8_900, item.Repo.Stars);
+    }
+
     [Fact]
     public async Task Brak_naglowka_sesji_konczy_sie_400()
     {
