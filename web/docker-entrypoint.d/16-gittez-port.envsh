@@ -1,0 +1,16 @@
+#!/bin/sh
+# Sourcowany przez entrypoint nginxa przed podstawieniem szablonów (rozszerzenie
+# .envsh, nie .sh - tylko wtedy eksport przeżyje do kolejnych kroków).
+#
+# Pusta zmienna daje "listen ;" i nginx pada na "invalid number of arguments",
+# co nie mówi nic o przyczynie. Wpada się w to na platformach, gdzie port
+# podaje się odwołaniem do zmiennej, której platforma akurat nie ustawia -
+# ENV z Dockerfile'a nie ratuje, bo pusta wartość i tak go przykrywa.
+
+set -e
+
+if [ -z "${GITTEZ_PORT:-}" ]; then
+    echo "$0: GITTEZ_PORT puste, wracam na 80"
+    GITTEZ_PORT=80
+    export GITTEZ_PORT
+fi

@@ -22,5 +22,6 @@ ENV GITTEZ_PORT=80 \
     NGINX_ENVSUBST_FILTER='^(GITTEZ_|NGINX_LOCAL_RESOLVERS)'
 
 COPY templates/ /etc/nginx/templates/
+COPY docker-entrypoint.d/ /docker-entrypoint.d/
 COPY --from=build /src/dist /usr/share/nginx/html
 EXPOSE 80

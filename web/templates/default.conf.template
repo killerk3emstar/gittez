@@ -1,5 +1,10 @@
 server {
+    # Oba stosy jawnie. Skrypt 10-listen-on-ipv6-by-default.sh z obrazu dokłada
+    # IPv6 tylko do konfiguracji z paczki, a naszą generuje envsubst dopiero w
+    # kroku 20, czyli po nim. Bez tej drugiej linii nginx nasłuchuje wyłącznie
+    # po IPv4 i jest nieosiągalny w sieci Railwaya, która jest IPv6-only.
     listen ${GITTEZ_PORT};
+    listen [::]:${GITTEZ_PORT};
     server_name _;
     root /usr/share/nginx/html;
 
