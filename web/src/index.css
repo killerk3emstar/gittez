@@ -28,6 +28,8 @@
 
   --track: oklch(0.912 0.006 250);
   --on-ink: oklch(0.99 0 0);
+  --ring: oklch(0.245 0.02 258 / 0.14);
+  --scrim: oklch(0.28 0.02 258 / 0.45);
 }
 
 :root[data-theme='dark'] {
@@ -53,6 +55,10 @@
 
   --track: oklch(0.3 0.014 258);
   --on-ink: oklch(0.16 0.012 258);
+  --ring: oklch(0.945 0.006 250 / 0.16);
+  /* Zasłona modala ma być ciemna w obu motywach - w ciemnym --ink jest prawie
+     biały, więc przyciemnienie liczone z niego rozjaśniało tło. */
+  --scrim: oklch(0.1 0.012 258 / 0.68);
 }
 
 @theme inline {
@@ -76,6 +82,7 @@
 
   --color-track: var(--track);
   --color-on-ink: var(--on-ink);
+  --color-scrim: var(--scrim);
 
   --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
@@ -93,6 +100,17 @@ body {
 :focus-visible {
   outline: 2px solid var(--copper);
   outline-offset: 2px;
+}
+
+/* Pole tekstowe dostaje ciemniejszą ramkę i cienki pierścień zamiast obwódki
+   z odstępem: ta ostatnia wokół szerokiego pola czyta się jak komunikat o
+   błędzie, a pojawia się już przy zwykłym kliknięciu. */
+input[type='text']:focus-visible,
+input:not([type]):focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 ::selection {
@@ -138,6 +156,19 @@ body {
    widoczna także bez rozróżniania kolorów. */
 .rail-missing {
   background-image: repeating-linear-gradient(-45deg, var(--rule-strong) 0 1px, transparent 1px 5px);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 400ms ease-out;
 }
 
 @keyframes pulse-soft {

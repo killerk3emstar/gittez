@@ -33,7 +33,7 @@ export function ScoreBreakdown({ item, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/40 p-0 backdrop-blur-sm sm:p-8"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-scrim p-0 backdrop-blur-sm sm:p-8"
       onClick={onClose}
     >
       <div

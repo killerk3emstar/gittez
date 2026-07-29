@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ProfileLanguage } from '../api/types'
+import { fieldSmall } from '../lib/ui'
 
 type Props = {
   detected: ProfileLanguage[]
@@ -87,7 +88,7 @@ export function LanguageChips({ detected, selected, onChange }: Props) {
           }}
           placeholder="Dołóż język, np. Rust"
           aria-label="Dołóż język spoza profilu"
-          className="w-48 rounded-chip border border-rule bg-panel px-3 py-1.5 text-sm text-ink outline-none transition placeholder:text-faint focus:border-rule-strong"
+          className={`w-48 ${fieldSmall}`}
         />
         <button
           type="button"

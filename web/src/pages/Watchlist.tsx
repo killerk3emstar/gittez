@@ -6,7 +6,7 @@ import { ErrorState, InlineError } from '../components/states/ErrorState'
 import { LineSkeleton } from '../components/states/Skeleton'
 import { useRemoveFromWatchlist, useUpdateNote, useWatchlist } from '../hooks/useWatchlist'
 import { formatAgo, formatStars } from '../lib/format'
-import { buttonGhost, buttonPrimary } from '../lib/ui'
+import { buttonGhost, buttonPrimary, field } from '../lib/ui'
 
 const maxNoteLength = 500
 
@@ -139,7 +139,7 @@ function WatchlistRow({ item }: { item: WatchlistItem }) {
               rows={3}
               autoFocus
               placeholder="Po co Ci to repo? Np. issue #412 wygląda na wieczorne zadanie."
-              className="w-full rounded-chip border border-rule bg-panel px-3 py-2 text-sm text-ink outline-none transition placeholder:text-faint focus:border-rule-strong"
+              className={field}
             />
             <div className="flex items-center gap-2">
               <button type="button" onClick={save} className={buttonGhost}>

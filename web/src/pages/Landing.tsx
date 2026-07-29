@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { ExampleReadout } from '../components/ExampleReadout'
 import { LanguageChips } from '../components/LanguageChips'
-import { RailRow, ScoreRail } from '../components/ScoreRail'
 import { ErrorState } from '../components/states/ErrorState'
 import { LineSkeleton } from '../components/states/Skeleton'
 import { StaleBanner } from '../components/states/StaleBanner'
 import { useProfile } from '../hooks/useProfile'
 import { parseMaxDifficulty } from '../lib/difficulty'
-import { exampleRepo, healthWeights, matchWeights, type ExampleRow } from '../lib/example'
+import { healthWeights, matchWeights } from '../lib/example'
 import { nearestStopIndex, starBand, starStops } from '../lib/starBand'
 import { buttonPrimary, field } from '../lib/ui'
 
@@ -88,9 +88,14 @@ export function Landing() {
     navigate(`/wyniki?${query}`)
   }
 
+  const analyzing = profile.isPending && submitted.length > 0
+
   return (
     <>
       <section className="mx-auto max-w-6xl px-4 pt-12 pb-16 sm:px-6 lg:pt-20">
+        {/* Lewa kolumna to wszystko, co podajesz, prawa to wszystko, co
+            dostajesz. Kryteria wchodzą pod formularz, a nie w miejsce
+            przykładu - formularz i ilustracja to dwie różne kategorie. */}
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-7">
             <p className="label text-muted">Filtr jakości dla „good first issues"</p>
@@ -118,104 +123,110 @@ export function Landing() {
               </button>
             </form>
 
-            <ol className="mt-10 max-w-lg border-t border-rule">
-              {steps.map((step, index) => (
-                <li key={step.title} className="flex gap-4 border-b border-rule py-3.5">
-                  <span className="label num pt-1 text-faint">{index + 1}</span>
-                  <span>
-                    <span className="block text-sm text-ink">{step.title}</span>
-                    <span className="mt-0.5 block text-sm leading-snug text-muted">{step.detail}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
+            <div className="mt-10">
+              {analyzing && <CriteriaSkeleton />}
+
+              {profile.isError && <ErrorState error={profile.error} onRetry={() => profile.refetch()} />}
+
+              {profile.data && !analyzing && (
+                <div className="rounded-panel border border-rule bg-panel p-5">
+                  {profile.data.isStale && (
+                    <div className="mb-5">
+                      <StaleBanner computedAt={profile.data.data.computedAt} />
+                    </div>
+                  )}
+
+                  <h2 className="label text-muted">Kryteria wyszukiwania</h2>
+
+                  <div className="mt-4 space-y-6">
+                    <div>
+                      <p className="text-sm text-ink">Wykryte języki</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted">
+                        Z {profile.data.data.publicRepoCount} publicznych repozytoriów i projektów, do których
+                        kontrybutowałeś. Odznacz, dołóż, decydujesz sam.
+                      </p>
+                      <div className="mt-3">
+                        <LanguageChips detected={detected} selected={languages} onChange={setLanguages} />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="target-stars" className="text-sm text-ink">
+                          Preferowana wielkość projektu
+                        </label>
+                        <input
+                          id="target-stars"
+                          type="range"
+                          min={0}
+                          max={starStops.length - 1}
+                          step={1}
+                          value={stopIndex}
+                          onChange={(e) => setStopIndex(Number(e.target.value))}
+                          className="mt-3 w-full accent-ink"
+                        />
+                        <p className="mt-2 text-xs leading-relaxed text-muted">
+                          Szukam w przedziale{' '}
+                          <span className="num text-ink">
+                            {band.lo.toLocaleString('pl-PL')}-{band.hi.toLocaleString('pl-PL')} ★
+                          </span>{' '}
+                          - suwak zmienia zapytanie do GitHuba, więc dostaniesz inne repozytoria, a nie te same
+                          karty z przeliczonymi punktami.
+                        </p>
+                      </div>
+
+                      <div>
+                        <span className="text-sm text-ink">Maksymalna trudność issues</span>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {difficultyOptions.map((option) => (
+                            <button
+                              key={option.label}
+                              type="button"
+                              onClick={() => setMaxDifficulty(option.value)}
+                              aria-pressed={maxDifficulty === option.value}
+                              className={`rounded-chip border px-3 py-1.5 text-sm transition ${
+                                maxDifficulty === option.value
+                                  ? 'border-ink bg-ink text-on-ink'
+                                  : 'border-rule text-muted hover:border-rule-strong hover:text-ink'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={search}
+                      disabled={languages.length === 0}
+                      className={`${buttonPrimary} w-full`}
+                    >
+                      Szukaj rekomendacji
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!profile.data && !profile.isError && !analyzing && (
+                <ol className="max-w-lg border-t border-rule">
+                  {steps.map((step, index) => (
+                    <li key={step.title} className="flex gap-4 border-b border-rule py-3.5">
+                      <span className="label num pt-1 text-faint">{index + 1}</span>
+                      <span>
+                        <span className="block text-sm text-ink">{step.title}</span>
+                        <span className="mt-0.5 block text-sm leading-snug text-muted">{step.detail}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
           </div>
 
           <div className="lg:col-span-5">
-            {profile.isPending && submitted.length > 0 && <CriteriaSkeleton />}
-
-            {profile.isError && <ErrorState error={profile.error} onRetry={() => profile.refetch()} />}
-
-            {profile.data && (
-              <div className="rounded-panel border border-rule bg-panel p-5">
-                {profile.data.isStale && (
-                  <div className="mb-5">
-                    <StaleBanner computedAt={profile.data.data.computedAt} />
-                  </div>
-                )}
-
-                <h2 className="label text-muted">Kryteria wyszukiwania</h2>
-
-                <div className="mt-4 space-y-6">
-                  <div>
-                    <p className="text-sm text-ink">Wykryte języki</p>
-                    <p className="mt-1 text-xs leading-relaxed text-muted">
-                      Z {profile.data.data.publicRepoCount} publicznych repozytoriów i projektów, do których
-                      kontrybutowałeś. Odznacz, dołóż, decydujesz sam.
-                    </p>
-                    <div className="mt-3">
-                      <LanguageChips detected={detected} selected={languages} onChange={setLanguages} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="target-stars" className="text-sm text-ink">
-                      Preferowana wielkość projektu
-                    </label>
-                    <input
-                      id="target-stars"
-                      type="range"
-                      min={0}
-                      max={starStops.length - 1}
-                      step={1}
-                      value={stopIndex}
-                      onChange={(e) => setStopIndex(Number(e.target.value))}
-                      className="mt-3 w-full accent-ink"
-                    />
-                    <p className="mt-2 text-xs leading-relaxed text-muted">
-                      Szukam w przedziale{' '}
-                      <span className="num text-ink">
-                        {band.lo.toLocaleString('pl-PL')}-{band.hi.toLocaleString('pl-PL')} ★
-                      </span>{' '}
-                      - suwak zmienia zapytanie do GitHuba, więc dostaniesz inne repozytoria, a nie te same karty
-                      z przeliczonymi punktami.
-                    </p>
-                  </div>
-
-                  <div>
-                    <span className="text-sm text-ink">Maksymalna trudność issues</span>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {difficultyOptions.map((option) => (
-                        <button
-                          key={option.label}
-                          type="button"
-                          onClick={() => setMaxDifficulty(option.value)}
-                          aria-pressed={maxDifficulty === option.value}
-                          className={`rounded-chip border px-3 py-1.5 text-sm transition ${
-                            maxDifficulty === option.value
-                              ? 'border-ink bg-ink text-on-ink'
-                              : 'border-rule text-muted hover:border-rule-strong hover:text-ink'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={search}
-                    disabled={languages.length === 0}
-                    className={`${buttonPrimary} w-full`}
-                  >
-                    Szukaj rekomendacji
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {!profile.data && !profile.isError && !(profile.isPending && submitted.length > 0) && <WorkedExample />}
+            <ExampleReadout />
           </div>
         </div>
       </section>
@@ -223,82 +234,6 @@ export function Landing() {
       <Method />
       <Limits />
     </>
-  )
-}
-
-// Zamiast obiecywać, pokazujemy jedną kartę tak, jak wygląda naprawdę -
-// razem z komponentem, dla którego zabrakło danych.
-function WorkedExample() {
-  return (
-    <figure className="rounded-panel border border-rule bg-panel p-5">
-      <figcaption className="flex items-baseline justify-between gap-3">
-        <span className="label text-muted">Przykład odczytu</span>
-        <span className="font-mono text-xs text-muted">{exampleRepo.fullName}</span>
-      </figcaption>
-
-      <div className="mt-5 space-y-6">
-        <ExampleAxis
-          title="Match Score"
-          axis="match"
-          score={exampleRepo.matchScore}
-          rows={exampleRepo.match}
-        />
-        <ExampleAxis
-          title="Health Score"
-          axis="health"
-          score={exampleRepo.healthScore}
-          rows={exampleRepo.health}
-        />
-      </div>
-
-      <p className="mt-6 border-t border-rule pt-4 text-xs leading-relaxed text-muted">
-        Wartości są przykładowe, nie odczytem na żywo. Przy prawdziwych wynikach to samo rozbicie otwiera się
-        pod „Skąd te liczby?" na każdej karcie.
-      </p>
-    </figure>
-  )
-}
-
-function ExampleAxis({
-  title,
-  axis,
-  score,
-  rows,
-}: {
-  title: string
-  axis: 'match' | 'health'
-  score: number
-  rows: ExampleRow[]
-}) {
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="display text-sm text-ink">{title}</h3>
-        <span className={`display num text-xl ${axis === 'match' ? 'text-copper-ink' : 'text-patina-ink'}`}>
-          {score.toFixed(1)}
-        </span>
-      </div>
-
-      <div className="mt-2">
-        <ScoreRail value={score} axis={axis} label={title} />
-      </div>
-
-      <ul className="mt-4 space-y-3">
-        {rows.map((row) => (
-          <li key={row.label}>
-            <RailRow
-              label={row.label}
-              axis={axis}
-              size="sm"
-              value={row.points}
-              max={row.maxPoints}
-              readout={row.points === null ? 'za mało danych' : `${row.points.toFixed(1)} / ${row.maxPoints}`}
-              note={row.readout}
-            />
-          </li>
-        ))}
-      </ul>
-    </div>
   )
 }
 

@@ -148,6 +148,13 @@ checks.push(['landing: język spoza profilu odtworzony', has(restored, 'Rust') &
 checks.push(['landing: pasmo z odtworzonego suwaka', has(restored, '1000-25000 ★') || has(restored, '1000-25 000 ★')])
 checks.push(['landing: chipy z profilu widoczne', has(restored, '7 repo, 2 kontrybucje')])
 
+// Kryteria wchodzą pod formularz, a nie w miejsce przykładu - formularz i
+// ilustracja to dwie różne kategorie i nie dzielą jednego slotu.
+checks.push([
+  'landing: kryteria nie wypierają przykładu',
+  has(restored, 'Kryteria wyszukiwania') && has(restored, 'Przykład odczytu'),
+])
+
 const watch = render('/watchlista')
 checks.push(['watchlista: odmiana lat', has(watch, 'rok temu') && !has(watch, '1 lata temu')])
 checks.push(['watchlista: notatka', has(watch, 'issue #1234 na wieczór')])
