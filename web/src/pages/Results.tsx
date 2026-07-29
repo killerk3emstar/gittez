@@ -144,7 +144,11 @@ export function Results() {
             </div>
           )}
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          {/* grid-cols-1 jawnie, nie domyślnie: Tailwind rozwija grid-cols-* do
+              minmax(0, 1fr), a bez tego jedna kolumna na telefonie jest torem
+              auto i nie schodzi poniżej min-content karty - a to wyznacza
+              nazwa repo, która ma white-space: nowrap od truncate. */}
+          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
             {items.map((item) => (
               <RepoCard
                 key={item.fullName}

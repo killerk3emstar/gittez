@@ -20,7 +20,10 @@ export function RepoCard({ item, highlight, bands, isWatched, isSaving, onToggle
   const weakest = item.healthScore !== null && item.healthScore < 45 ? weakestComponent(item.healthBreakdown) : null
 
   return (
-    <article className="flex flex-col rounded-panel border border-rule bg-panel p-5 transition hover:border-rule-strong">
+    // min-w-0 na samej karcie, nie tylko na kolumnie: nazwa repo ma nowrap od
+    // truncate, więc bez tego karta nie zejdzie poniżej swojego min-content w
+    // żadnym kontenerze, w który ją włożymy.
+    <article className="flex min-w-0 flex-col rounded-panel border border-rule bg-panel p-5 transition hover:border-rule-strong">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <a
