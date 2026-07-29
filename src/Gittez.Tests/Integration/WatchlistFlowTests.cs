@@ -110,6 +110,19 @@ public class WatchlistFlowTests(GittezApp app) : IClassFixture<GittezApp>
 
         Assert.NotNull(item.Repo);
         Assert.Equal(8_900, item.Repo.Stars);
+
+        // Lista dobiera metadane osobnym zapytaniem, więc musi dopasowywać tak
+        // samo jak odpowiedź na zapis - inaczej gwiazdki znikają po odświeżeniu.
+        var listed = await client.SendAsync(Get(session));
+        var only = Assert.Single((await listed.Content.ReadFromJsonAsync<WatchlistItemResponse[]>())!);
+
+        Assert.NotNull(only.Repo);
+        Assert.Equal(8_900, only.Repo.Stars);
+
+        var patched = await client.SendAsync(Patch(session, item.Id, new UpdateWatchlistItemRequest("notatka")));
+        var updated = (await patched.Content.ReadFromJsonAsync<WatchlistItemResponse>())!;
+
+        Assert.NotNull(updated.Repo);
     }
 
     [Fact]

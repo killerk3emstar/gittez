@@ -31,10 +31,12 @@ public static class WatchlistEndpoints
 
             if (items.Count == 0) return Results.Ok(Array.Empty<WatchlistItemResponse>());
 
-            var names = items.Select(i => i.RepoFullName).ToArray();
+            // Dopasowanie bez wielkości liter musi być już w zapytaniu: słownik
+            // niżej nie ma czego porównywać, jeżeli baza nie odda wiersza.
+            var names = items.Select(i => i.RepoFullName.ToLower()).ToArray();
 
             var repos = await db.RepoCache.AsNoTracking()
-                .Where(r => names.Contains(r.FullName))
+                .Where(r => names.Contains(r.FullName.ToLower()))
                 .ToListAsync(ct);
 
             var byName = repos.ToDictionary(r => r.FullName, StringComparer.OrdinalIgnoreCase);
