@@ -1,8 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/GitBounty.Api/GitBounty.Api.csproj" />
-    <Project Path="src/GitBounty.Core/GitBounty.Core.csproj" />
-    <Project Path="src/GitBounty.Infrastructure/GitBounty.Infrastructure.csproj" />
-    <Project Path="src/GitBounty.Tests/GitBounty.Tests.csproj" />
-  </Folder>
-</Solution>

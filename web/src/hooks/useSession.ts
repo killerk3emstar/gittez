@@ -1,4 +1,4 @@
-const storageKey = 'gitbounty.sessionId'
+const storageKey = 'gittez.sessionId'
 
 // Anonimowy UUID, nie uwierzytelnienie: da się go podrobić, ale nie chroni
 // niczego wrażliwego (SPEC §7). Wiersz w bazie powstaje przy pierwszym zapisie.

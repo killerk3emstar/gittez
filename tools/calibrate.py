@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Kalibrator scoringu GitBounty.
+Kalibrator scoringu Gittez.
 
 Liczy pełny pipeline na żywym API i pokazuje rozstrzał każdego komponentu.
 Odpowiada na pytanie, czy scoring cokolwiek różnicuje: komponent, który wszystkim

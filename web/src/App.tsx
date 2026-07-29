@@ -31,7 +31,7 @@ function Header() {
     <header className="border-b border-ink-800">
       <div className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-4">
         <NavLink to="/" className="font-semibold text-white">
-          GitBounty
+          Gittez
         </NavLink>
 
         <nav className="flex items-center gap-4 text-sm">

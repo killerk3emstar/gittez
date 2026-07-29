@@ -2,15 +2,15 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_DB: gitbounty
-      POSTGRES_USER: gitbounty
+      POSTGRES_DB: gittez
+      POSTGRES_USER: gittez
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?ustaw POSTGRES_PASSWORD w .env}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gitbounty -d gitbounty"]
+      test: ["CMD-SHELL", "pg_isready -U gittez -d gittez"]
       interval: 5s
       timeout: 3s
       retries: 12
@@ -20,7 +20,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      ConnectionStrings__Default: "Host=db;Port=5432;Database=gitbounty;Username=gitbounty;Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=gittez;Username=gittez;Password=${POSTGRES_PASSWORD}"
       GitHub__Token: ${GITHUB_TOKEN:-}
       APPLY_MIGRATIONS: ${APPLY_MIGRATIONS:-true}
       SEED_ON_STARTUP: ${SEED_ON_STARTUP:-true}
