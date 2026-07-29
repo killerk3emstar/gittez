@@ -21,6 +21,12 @@ WORKDIR /app
 COPY --from=build /app/publish .
 # seed jest wczytywany przez DatabaseSeeder po migracjach, nie przez initdb
 COPY db/seed/ db/seed/
+
+# Nasłuch na [::] zamiast domyślnego: sieć prywatna Railwaya jest wyłącznie po
+# IPv6, więc usługa związana tylko z IPv4 jest tam nieosiągalna. Linux domyślnie
+# nie ustawia bindv6only, więc to samo gniazdo obsługuje IPv4 w compose.
+ENV ASPNETCORE_URLS=http://[::]:8080
+
 USER $APP_UID
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "Gittez.Api.dll"]
