@@ -78,8 +78,12 @@ export function LanguageChips({ detected, selected, onChange }: Props) {
 
       <div className="flex gap-2">
         <input
-          id="jezyk-dodatkowy"
-          name="jezyk-dodatkowy"
+          id="jezykdodatkowy"
+          name="jezykdodatkowy"
+          data-1p-ignore
+          data-bwignore
+          data-lpignore="true"
+          data-form-type="other"
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
           onKeyDown={(e) => {

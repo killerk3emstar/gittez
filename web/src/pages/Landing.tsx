@@ -110,16 +110,26 @@ export function Landing() {
             </p>
 
             <form onSubmit={analyze} autoComplete="off" className="mt-8 flex max-w-lg flex-col gap-2 sm:flex-row">
-              {/* type="search" nie jest tu ozdobą: menedżery haseł pomijają pola
-                  wyszukiwania, a samo autocomplete="off" jest dla nich tylko
-                  sugestią. Pole faktycznie wyszukuje profil, więc typ jest
-                  zgodny z tym, co robi, i przy okazji daje natywny krzyżyk do
-                  czyszczenia. Nazwa bez słów "login", "user" czy "email", bo to
-                  po nich autofill rozpoznaje pole poświadczeń. */}
+              {/* Pole wyszukuje profil, więc type="search" jest zgodny z tym, co
+                  robi, i przy okazji menedżery haseł pomijają pola wyszukiwania.
+                  Nazwa bez słów "login", "user" i "email", bo po nich autofill
+                  rozpoznaje pole poświadczeń, i bez myślnika - to ostatnie to
+                  hedge na powtarzaną regułę WebKita, której nie znalazłem w
+                  dokumentacji Apple.
+
+                  Atrybuty data-* to udokumentowane wyłączniki poszczególnych
+                  menedżerów; autocomplete="off" jest dla nich tylko sugestią.
+                  Apple nie dokumentuje własnego, a data-form-type pochodzi ze
+                  wspólnej adnotacji formularzy, więc jest tu najbliższym
+                  strzałem. */}
               <input
                 type="search"
-                id="gh-lookup"
-                name="gh-lookup"
+                id="ghlookup"
+                name="ghlookup"
+                data-1p-ignore
+                data-bwignore
+                data-lpignore="true"
+                data-form-type="other"
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
                 placeholder="login GitHub, np. octocat"
