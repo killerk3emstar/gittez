@@ -103,14 +103,15 @@ function render(path: string): string {
 const checks: Array<[string, boolean]> = []
 
 // renderToString wstawia <!-- --> między sąsiednie węzły tekstowe i escapuje
-// apostrofy - to szum SSR, nie treść strony.
+// apostrofy, a toLocaleString('pl-PL') rozdziela tysiące twardą spacją - to
+// szum renderowania, nie treść strony.
 const normalize = (html: string) =>
   html
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/&#x27;/g, "'")
     .replace(/&quot;/g, '"')
     .replace(/&amp;/g, '&')
-    .replace(/ /g, ' ')
+    .replace(/\u00a0/g, ' ')
 
 const has = (html: string, text: string) => normalize(html).includes(text)
 
