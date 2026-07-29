@@ -38,7 +38,7 @@ function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-rule bg-paper/92 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:gap-4 sm:px-6">
         <NavLink to="/" className="wordmark text-ink" aria-label="Gittez, strona główna">
           GITTEZ
         </NavLink>

@@ -52,14 +52,14 @@ export function RateLimitMeter() {
         <span className="text-xs font-medium text-rust">bez łączności</span>
       ) : core === null ? (
         <>
-          <div className="w-12 sm:w-16">
+          <div className="w-10 sm:w-16">
             <ScoreRail value={null} size="sm" label="Limit GitHub API" />
           </div>
           <span className="num text-xs text-muted">{health.isPending ? '...' : 'bez odczytu'}</span>
         </>
       ) : (
         <>
-          <div className="w-12 sm:w-16">
+          <div className="w-10 sm:w-16">
             <ScoreRail
               value={core.remaining}
               max={core.limit}
@@ -75,8 +75,10 @@ export function RateLimitMeter() {
         </>
       )}
 
+      {/* Na wąskim ekranie dopisek nie mieści się obok reszty nagłówka, a pełny
+          stan obu pul z czasami resetu stoi w stopce i w tytule pola. */}
       {tightSearch && (
-        <span className={`num text-xs font-medium ${textTone(tightSearch)}`}>
+        <span className={`num hidden text-xs font-medium sm:inline ${textTone(tightSearch)}`}>
           <span className="text-muted">search </span>
           {tightSearch.remaining}
           <span className="hidden text-muted sm:inline">/{tightSearch.limit}</span>
