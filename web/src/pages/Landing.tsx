@@ -111,17 +111,14 @@ export function Landing() {
 
             <form onSubmit={analyze} autoComplete="off" className="mt-8 flex max-w-lg flex-col gap-2 sm:flex-row">
               {/* Pole wyszukuje profil, więc type="search" jest zgodny z tym, co
-                  robi, i przy okazji menedżery haseł pomijają pola wyszukiwania.
-                  Nazwa bez słów "login", "user" i "email", bo po nich autofill
-                  rozpoznaje pole poświadczeń, i bez myślnika - to ostatnie to
-                  hedge na powtarzaną regułę WebKita, której nie znalazłem w
-                  dokumentacji Apple.
+                  robi, i daje natywny krzyżyk czyszczenia (przemalowany w
+                  index.css, bo w Chrome jest niebieski).
 
-                  Atrybuty data-* to udokumentowane wyłączniki poszczególnych
-                  menedżerów; autocomplete="off" jest dla nich tylko sugestią.
-                  Apple nie dokumentuje własnego, a data-form-type pochodzi ze
-                  wspólnej adnotacji formularzy, więc jest tu najbliższym
-                  strzałem. */}
+                  autocomplete="off" jest dla menedżerów haseł sugestią, nie
+                  poleceniem, więc obok stoją ich udokumentowane wyłączniki.
+                  Działają na 1Password, LastPassa i Bitwardena; iCloud Passwords
+                  ignoruje wszystkie i został odłożony (SMALL_FIXES 13), bo
+                  jedyne, co go zatrzymuje, kłamie o stanie pola. */}
               <input
                 type="search"
                 id="ghlookup"
