@@ -240,14 +240,14 @@ export function Landing() {
 function CriteriaSkeleton() {
   return (
     <div className="rounded-panel border border-rule bg-panel p-5">
-      <LineSkeleton className="h-2.5 w-32" />
+      <LineSkeleton className="h-2.5 w-32 rounded-chip" />
       <div className="mt-5 flex flex-wrap gap-2">
-        <LineSkeleton className="h-8 w-32" />
-        <LineSkeleton className="h-8 w-40" />
-        <LineSkeleton className="h-8 w-28" />
+        <LineSkeleton className="h-8 w-32 rounded-chip" />
+        <LineSkeleton className="h-8 w-40 rounded-chip" />
+        <LineSkeleton className="h-8 w-28 rounded-chip" />
       </div>
-      <LineSkeleton className="mt-6 h-1.5 w-full" />
-      <LineSkeleton className="mt-6 h-10 w-full" />
+      <LineSkeleton className="mt-6 h-1.5 w-full rounded-[1px]" />
+      <LineSkeleton className="mt-6 h-10 w-full rounded-chip" />
     </div>
   )
 }

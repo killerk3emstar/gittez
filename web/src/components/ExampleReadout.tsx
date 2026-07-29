@@ -70,7 +70,10 @@ export function ExampleReadout() {
       </div>
 
       <div className="mt-6 border-t border-rule pt-2">
-        <div className="flex items-center gap-2" role="tablist" aria-label="Przykłady odczytu">
+        {/* Nie role="tablist": wzorzec zakładek obiecuje nawigację strzałkami i
+            powiązany panel, a to są wskaźniki karuzeli. aria-current mówi
+            prawdę o tym, co tu faktycznie działa. */}
+        <div className="flex items-center gap-2" role="group" aria-label="Przykłady odczytu">
           {examples.map((item, position) => {
             const active = position === index
 
@@ -78,8 +81,7 @@ export function ExampleReadout() {
               <button
                 key={item.fullName}
                 type="button"
-                role="tab"
-                aria-selected={active}
+                aria-current={active}
                 aria-label={`Przykład ${position + 1} z ${examples.length}: ${item.fullName}`}
                 onClick={() => {
                   setIndex(position)

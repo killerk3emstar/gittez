@@ -40,6 +40,9 @@ export function ResultsSkeleton({ count = 6 }: { count?: number }) {
   )
 }
 
+// Bez zaokrąglenia w bazie: element ma udawać to, co się ładuje, więc promień
+// podaje wywołujący. Wpisany na sztywno zderzałby się z nim dwiema klasami o
+// tej samej właściwości i wygrywałaby kolejność w arkuszu, nie intencja.
 export function LineSkeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse-soft rounded-chip bg-track ${className}`} />
+  return <div className={`animate-pulse-soft bg-track ${className}`} />
 }
