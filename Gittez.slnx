@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Gittez.Api/Gittez.Api.csproj" />
+    <Project Path="src/Gittez.Core/Gittez.Core.csproj" />
+    <Project Path="src/Gittez.Infrastructure/Gittez.Infrastructure.csproj" />
+    <Project Path="src/Gittez.Tests/Gittez.Tests.csproj" />
+  </Folder>
+</Solution>

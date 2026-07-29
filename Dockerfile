@@ -1,15 +1,15 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY src/GitBounty.Core/GitBounty.Core.csproj src/GitBounty.Core/
-COPY src/GitBounty.Infrastructure/GitBounty.Infrastructure.csproj src/GitBounty.Infrastructure/
-COPY src/GitBounty.Api/GitBounty.Api.csproj src/GitBounty.Api/
-RUN dotnet restore src/GitBounty.Api/GitBounty.Api.csproj
+COPY src/Gittez.Core/Gittez.Core.csproj src/Gittez.Core/
+COPY src/Gittez.Infrastructure/Gittez.Infrastructure.csproj src/Gittez.Infrastructure/
+COPY src/Gittez.Api/Gittez.Api.csproj src/Gittez.Api/
+RUN dotnet restore src/Gittez.Api/Gittez.Api.csproj
 
-COPY src/GitBounty.Core/ src/GitBounty.Core/
-COPY src/GitBounty.Infrastructure/ src/GitBounty.Infrastructure/
-COPY src/GitBounty.Api/ src/GitBounty.Api/
-RUN dotnet publish src/GitBounty.Api/GitBounty.Api.csproj -c Release -o /app/publish
+COPY src/Gittez.Core/ src/Gittez.Core/
+COPY src/Gittez.Infrastructure/ src/Gittez.Infrastructure/
+COPY src/Gittez.Api/ src/Gittez.Api/
+RUN dotnet publish src/Gittez.Api/Gittez.Api.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 # curl wyłącznie dla healthchecku w compose - obraz runtime go nie zawiera
@@ -23,4 +23,4 @@ COPY --from=build /app/publish .
 COPY db/seed/ db/seed/
 USER $APP_UID
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "GitBounty.Api.dll"]
+ENTRYPOINT ["dotnet", "Gittez.Api.dll"]
