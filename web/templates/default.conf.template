@@ -1,0 +1,44 @@
+server {
+    listen ${GITTEZ_PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json;
+
+    # Front i API na jednym originie: backend nie potrzebuje CORS-u, a
+    # X-Data-Stale jest widoczny dla fetcha bez expose-headers.
+    location /api/ {
+        # Adres upstreamu rozwiązywany przy każdym żądaniu, nie przy starcie.
+        # Nazwa w proxy_pass wprost każe nginxowi rozwiązać ją raz i trzymać do
+        # restartu, a w sieci prywatnej Railwaya adres API zmienia się po każdym
+        # deployu backendu.
+        resolver ${NGINX_LOCAL_RESOLVERS} ipv6=on valid=10s;
+        set $upstream ${GITTEZ_API_UPSTREAM};
+        proxy_pass $upstream$request_uri;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Świeży przebieg to ~100 wywołań do GitHuba i 6-8 sekund (SPEC §2.2),
+        # więc domyślne 60 s w nginxie byłoby za ciasne przy wolnej sieci.
+        proxy_read_timeout 120s;
+    }
+
+    # Jeden nagłówek, nie expires plus add_header: te dwa mechanizmy nie wiedzą
+    # o sobie i wysyłały dwa osobne Cache-Control.
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # Routing jest po stronie klienta, więc wejście prosto w /wyniki musi
+    # dostać index.html, a nie 404 od nginxa.
+    location / {
+        # Jedyny plik bez hasza w nazwie, więc po redeployu przeglądarka musi
+        # pobrać go od nowa - inaczej poda dokument wskazujący na assety,
+        # których już nie ma.
+        add_header Cache-Control "no-cache";
+        try_files $uri $uri/ /index.html;
+    }
+}
