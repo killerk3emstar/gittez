@@ -24,6 +24,7 @@ services:
       GitHub__Token: ${GITHUB_TOKEN:-}
       APPLY_MIGRATIONS: ${APPLY_MIGRATIONS:-true}
       SEED_ON_STARTUP: ${SEED_ON_STARTUP:-true}
+      ENABLE_API_DOCS: ${ENABLE_API_DOCS:-true}
     # Port wystawiony wyłącznie dla Scalara i ręcznych strzałów - przeglądarka
     # chodzi na 8080, a stamtąd nginx proxuje /api po sieci wewnętrznej.
     ports:

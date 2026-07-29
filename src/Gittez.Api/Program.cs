@@ -39,8 +39,14 @@ if (app.Configuration.GetValue("APPLY_MIGRATIONS", false))
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-app.MapOpenApi();
-app.MapScalarApiReference();
+// Scalar zostaje w demie, bo compose ustawia ENABLE_API_DOCS, ale poza
+// środowiskiem deweloperskim nie włącza się sam.
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue("ENABLE_API_DOCS", false))
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
+
 app.MapHealthEndpoints();
 app.MapProfileEndpoints();
 app.MapRecommendationEndpoints();
