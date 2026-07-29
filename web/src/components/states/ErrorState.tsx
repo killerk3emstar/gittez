@@ -9,15 +9,16 @@ export function ErrorState({ error, onRetry }: Props) {
   const { title, detail } = describeApiError(error)
 
   return (
-    <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 px-6 py-8 text-center">
-      <h3 className="text-lg font-semibold text-rose-200">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-ink-400">{detail}</p>
+    <div className="rounded-panel border border-l-2 border-rule border-l-rust bg-panel px-6 py-8">
+      <p className="label text-rust">Nie udało się</p>
+      <h3 className="display mt-2 text-lg text-ink">{title}</h3>
+      <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted">{detail}</p>
 
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="mt-5 rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-100 transition hover:bg-rose-500/20"
+          className="mt-5 rounded-chip border border-rule px-3 py-1.5 text-sm text-ink transition hover:border-rule-strong hover:bg-sunk"
         >
           Spróbuj ponownie
         </button>
@@ -32,9 +33,9 @@ export function InlineError({ error, onDismiss }: { error: unknown; onDismiss?: 
   const { title, detail } = describeApiError(error)
 
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-      <p className="flex-1">
-        <span className="font-medium">{title}.</span> {detail}
+    <div className="flex items-start gap-3 rounded-chip border border-l-2 border-rule border-l-rust bg-panel px-4 py-3 text-sm">
+      <p className="flex-1 text-ink-soft">
+        <span className="font-medium text-ink">{title}.</span> {detail}
       </p>
 
       {onDismiss && (
@@ -42,7 +43,7 @@ export function InlineError({ error, onDismiss }: { error: unknown; onDismiss?: 
           type="button"
           onClick={onDismiss}
           aria-label="Zamknij komunikat"
-          className="shrink-0 text-rose-200/70 transition hover:text-rose-100"
+          className="shrink-0 text-muted transition hover:text-ink"
         >
           ✕
         </button>

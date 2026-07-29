@@ -118,26 +118,42 @@ const has = (html: string, text: string) => normalize(html).includes(text)
 const landing = render('/')
 checks.push(['landing: nagłówek', has(landing, 'Do których repozytoriów')])
 checks.push(['landing: pole loginu', has(landing, 'login GitHub, np. octocat')])
-checks.push(['landing: licznik watchlisty', has(landing, 'Watchlista (2)')])
+checks.push(['landing: licznik watchlisty', has(landing, 'Watchlista') && has(landing, '>2</span>')])
+checks.push(['landing: przykład rozbicia', has(landing, 'Przykład odczytu') && has(landing, 'MudBlazor/MudBlazor')])
+checks.push(['landing: przykład opisany jako przykład', has(landing, 'Wartości są przykładowe')])
+checks.push(['landing: tabela wag', has(landing, 'Skąd biorą się liczby') && has(landing, 'Wielkość społeczności')])
+checks.push(['landing: granice', has(landing, 'Czego Gittez nie robi')])
+
+// Licznik limitu ma być widoczny w każdym stanie, także zanim /api/health
+// zdąży odpowiedzieć - przed poprawką komponent zwracał wtedy null.
+checks.push(['nagłówek: licznik limitu bez danych', has(landing, 'GitHub API')])
 
 const results = render('/wyniki?login=octocat&languages=C%23%2CTypeScript&targetStars=500')
 checks.push(['wyniki: nazwa repo', has(results, 'MudBlazor/MudBlazor')])
 checks.push(['wyniki: zdanie o filtrze', has(results, 'co najmniej jedno nieprzypisane issue')])
 checks.push(['wyniki: pasmo gwiazdek', has(results, '100-2500 ★') || has(results, '100-2 500 ★')])
-checks.push(['wyniki: pierścień Match', has(results, '>79<') || has(results, '>78<')])
-checks.push(['wyniki: zdrowe repo', has(results, 'Health 84')])
-checks.push(['wyniki: chore repo z ostrzeżeniem', has(results, 'Health 34')])
+checks.push(['wyniki: odczyt Match', has(results, '>79<') || has(results, '>78<')])
+checks.push(['wyniki: skala Match opisana dla czytnika', has(results, 'Match: 78.5 na 100')])
+checks.push(['wyniki: zdrowe repo', has(results, 'Health: 84.0 na 100')])
+checks.push(['wyniki: chore repo z ostrzeżeniem', has(results, 'Health: 34.0 na 100')])
 checks.push(['wyniki: chip issue', has(results, 'Fix typo in DataGrid docs')])
 checks.push(['wyniki: trudność', has(results, 'łatwe') && has(results, 'trudniejsze')])
 checks.push(['wyniki: brak finalScore na karcie', !has(results, '80.4') && !has(results, '80,4')])
 checks.push(['wyniki: zdanie wyróżniające', has(results, 'PR-ów zmergowanych') || has(results, 'Mniejsze niż 78%')])
-checks.push(['wyniki: gwiazdka watchlisty zaznaczona', has(results, '★</button>') || has(results, '★')])
+checks.push(['wyniki: stan watchlisty na karcie', has(results, 'Jest na watchliście')])
 
 const restored = render('/?login=octocat&languages=Rust&targetStars=5000')
 checks.push(['landing: login odtworzony z adresu', has(restored, 'value="octocat"')])
 checks.push(['landing: język spoza profilu odtworzony', has(restored, 'Rust') && has(restored, 'dodany ręcznie')])
 checks.push(['landing: pasmo z odtworzonego suwaka', has(restored, '1000-25000 ★') || has(restored, '1000-25 000 ★')])
 checks.push(['landing: chipy z profilu widoczne', has(restored, '7 repo, 2 kontrybucje')])
+
+// Kryteria wchodzą pod formularz, a nie w miejsce przykładu - formularz i
+// ilustracja to dwie różne kategorie i nie dzielą jednego slotu.
+checks.push([
+  'landing: kryteria nie wypierają przykładu',
+  has(restored, 'Kryteria wyszukiwania') && has(restored, 'Przykład odczytu'),
+])
 
 const watch = render('/watchlista')
 checks.push(['watchlista: odmiana lat', has(watch, 'rok temu') && !has(watch, '1 lata temu')])

@@ -2,18 +2,29 @@
 // współbieżność (SPEC §2.2) - skeleton nie jest tu ozdobnikiem.
 export function CardSkeleton() {
   return (
-    <div className="animate-pulse-soft rounded-2xl border border-ink-800 bg-ink-900/50 p-5">
-      <div className="flex items-start gap-4">
+    <div className="animate-pulse-soft rounded-panel border border-rule bg-panel p-5">
+      <div className="flex items-start gap-3">
         <div className="flex-1 space-y-2">
-          <div className="h-4 w-2/5 rounded bg-ink-800" />
-          <div className="h-3 w-full rounded bg-ink-800" />
-          <div className="h-3 w-3/4 rounded bg-ink-800" />
+          <div className="h-3.5 w-2/5 rounded-chip bg-track" />
+          <div className="h-2.5 w-3/5 rounded-chip bg-track" />
         </div>
-        <div className="size-16 shrink-0 rounded-full bg-ink-800" />
+        <div className="size-7 shrink-0 rounded-chip bg-track" />
       </div>
-      <div className="mt-5 space-y-2">
-        <div className="h-9 w-full rounded-lg bg-ink-800" />
-        <div className="h-9 w-full rounded-lg bg-ink-800" />
+
+      <div className="mt-5 space-y-4">
+        <div className="space-y-1.5">
+          <div className="h-2 w-16 rounded-chip bg-track" />
+          <div className="h-1.5 w-full rounded-[1px] bg-track" />
+        </div>
+        <div className="space-y-1.5">
+          <div className="h-2 w-16 rounded-chip bg-track" />
+          <div className="h-1.5 w-full rounded-[1px] bg-track" />
+        </div>
+      </div>
+
+      <div className="mt-5 space-y-2 border-t border-rule pt-4">
+        <div className="h-3 w-4/5 rounded-chip bg-track" />
+        <div className="h-3 w-3/5 rounded-chip bg-track" />
       </div>
     </div>
   )
@@ -29,6 +40,9 @@ export function ResultsSkeleton({ count = 6 }: { count?: number }) {
   )
 }
 
+// Bez zaokrąglenia w bazie: element ma udawać to, co się ładuje, więc promień
+// podaje wywołujący. Wpisany na sztywno zderzałby się z nim dwiema klasami o
+// tej samej właściwości i wygrywałaby kolejność w arkuszu, nie intencja.
 export function LineSkeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse-soft rounded bg-ink-800 ${className}`} />
+  return <div className={`animate-pulse-soft bg-track ${className}`} />
 }

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Dwa paski odczytu o różnym wypełnieniu: ten sam znak, co skala na karcie.
+       Litera nie niosłaby nic, czego nie niesie już wordmark w nagłówku.
+       Tor dostosowuje się do motywu karty przeglądarki, wypełnienia zostają
+       stałe - to one są znakiem rozpoznawczym. -->
+  <style>
+    .track { fill: #ccd2da }
+    @media (prefers-color-scheme: dark) { .track { fill: #3d434b } }
+  </style>
+
+  <rect class="track" x="4" y="8" width="24" height="6" rx="3" />
+  <rect fill="#bd6b30" x="4" y="8" width="15" height="6" rx="3" />
+
+  <rect class="track" x="4" y="18" width="24" height="6" rx="3" />
+  <rect fill="#4f8f8b" x="4" y="18" width="19" height="6" rx="3" />
+</svg>

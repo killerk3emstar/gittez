@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ProfileLanguage } from '../api/types'
+import { fieldSmall } from '../lib/ui'
 
 type Props = {
   detected: ProfileLanguage[]
@@ -17,6 +18,10 @@ function source(language: ProfileLanguage): string {
 
   return parts.join(', ')
 }
+
+const chipBase = 'rounded-chip border px-3 py-1.5 text-sm transition'
+const chipOn = 'border-ink bg-ink text-on-ink'
+const chipOff = 'border-rule bg-panel text-muted hover:border-rule-strong hover:text-ink'
 
 export function LanguageChips({ detected, selected, onChange }: Props) {
   const [custom, setCustom] = useState('')
@@ -55,11 +60,7 @@ export function LanguageChips({ detected, selected, onChange }: Props) {
               type="button"
               onClick={() => toggle(language.name)}
               aria-pressed={active}
-              className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                active
-                  ? 'border-sky-400/60 bg-sky-500/15 text-sky-200'
-                  : 'border-ink-700 bg-transparent text-ink-400 hover:border-ink-400 hover:text-ink-200'
-              }`}
+              className={`${chipBase} ${active ? chipOn : chipOff}`}
             >
               {language.name}
               <span className="ml-1.5 text-xs opacity-70">{source(language)}</span>
@@ -68,13 +69,7 @@ export function LanguageChips({ detected, selected, onChange }: Props) {
         })}
 
         {extra.map((name) => (
-          <button
-            key={name}
-            type="button"
-            onClick={() => toggle(name)}
-            aria-pressed
-            className="rounded-full border border-sky-400/60 bg-sky-500/15 px-3 py-1.5 text-sm text-sky-200 transition"
-          >
+          <button key={name} type="button" onClick={() => toggle(name)} aria-pressed className={`${chipBase} ${chipOn}`}>
             {name}
             <span className="ml-1.5 text-xs opacity-70">dodany ręcznie</span>
           </button>
@@ -83,6 +78,12 @@ export function LanguageChips({ detected, selected, onChange }: Props) {
 
       <div className="flex gap-2">
         <input
+          id="jezykdodatkowy"
+          name="jezykdodatkowy"
+          data-1p-ignore
+          data-bwignore
+          data-lpignore="true"
+          data-form-type="other"
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
           onKeyDown={(e) => {
@@ -92,12 +93,17 @@ export function LanguageChips({ detected, selected, onChange }: Props) {
             }
           }}
           placeholder="Dołóż język, np. Rust"
-          className="w-48 rounded-lg border border-ink-700 bg-ink-900 px-3 py-1.5 text-sm text-ink-200 outline-none placeholder:text-ink-700 focus:border-sky-400/60"
+          aria-label="Dołóż język spoza profilu"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          className={`w-48 ${fieldSmall}`}
         />
         <button
           type="button"
           onClick={addCustom}
-          className="rounded-lg border border-ink-700 px-3 py-1.5 text-sm text-ink-200 transition hover:bg-ink-800"
+          className="rounded-chip border border-rule px-3 py-1.5 text-sm text-ink transition hover:border-rule-strong hover:bg-sunk"
         >
           Dodaj
         </button>

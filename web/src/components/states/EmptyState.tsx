@@ -10,13 +10,15 @@ type Props = {
 
 export function EmptyState({ title, hints = [], action }: Props) {
   return (
-    <div className="rounded-2xl border border-dashed border-ink-700 px-6 py-12 text-center">
-      <h3 className="text-lg font-semibold text-white">{title}</h3>
+    <div className="rounded-panel border border-dashed border-rule-strong px-6 py-10">
+      <h3 className="display text-lg text-ink">{title}</h3>
 
       {hints.length > 0 && (
-        <ul className="mx-auto mt-4 max-w-md space-y-1.5 text-sm text-ink-400">
+        <ul className="mt-4 max-w-lg space-y-2 text-sm text-muted">
           {hints.map((hint) => (
-            <li key={hint}>{hint}</li>
+            <li key={hint} className="border-l border-rule-strong pl-3">
+              {hint}
+            </li>
           ))}
         </ul>
       )}
