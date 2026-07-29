@@ -5,6 +5,7 @@ using Gittez.Core.Abstractions;
 using Gittez.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly.Timeout;
 
 namespace Gittez.Infrastructure.GitHub;
 
@@ -102,6 +103,35 @@ public sealed class GitHubClient(
 
     async Task<GitHubResult<T>> GetAsync<T>(string path, string? etag, CancellationToken ct)
     {
+        try
+        {
+            return await SendAsync<T>(path, etag, ct);
+        }
+        catch (Exception ex) when (IsTransportFailure(ex, ct))
+        {
+            throw new GitHubTransportException($"GitHub nie odpowiedział na {path}: {ex.Message}", ex);
+        }
+    }
+
+    // Zerwane połączenie, timeout Polly i przerwane czytanie odpowiedzi wyglądają
+    // inaczej, a znaczą to samo. Anulowanie żądania przez klienta awarią nie jest.
+    static bool IsTransportFailure(Exception ex, CancellationToken ct)
+    {
+        if (ct.IsCancellationRequested) return false;
+
+        return ex switch
+        {
+            // Puste StatusCode znaczy, że odpowiedź w ogóle nie przyszła: DNS,
+            // odmowa połączenia, zerwane TLS. Z ustawionym przyszedł błąd HTTP
+            // i ten rozstrzygamy wyżej, po statusie.
+            HttpRequestException { StatusCode: null } => true,
+            TimeoutRejectedException or TaskCanceledException => true,
+            _ => false,
+        };
+    }
+
+    async Task<GitHubResult<T>> SendAsync<T>(string path, string? etag, CancellationToken ct)
+    {
         using var request = new HttpRequestMessage(HttpMethod.Get, path);
         if (!string.IsNullOrEmpty(etag)) request.Headers.TryAddWithoutValidation("If-None-Match", etag);
 
@@ -126,6 +156,13 @@ public sealed class GitHubClient(
             throw new GitHubRateLimitExceededException(
                 (pool == RateLimitPool.Search ? rateLimit.Search : rateLimit.Core)?.ResetAt
                     ?? DateTimeOffset.UtcNow.AddMinutes(1));
+        }
+
+        // 5xx przeżyło już trzy ponowienia (GitHubResilience), więc to nie jest
+        // chwilowa czkawka - lepiej oddać cache niż błąd.
+        if ((int)response.StatusCode >= 500)
+        {
+            throw new GitHubTransportException($"GitHub zwrócił {(int)response.StatusCode} dla {path}");
         }
 
         response.EnsureSuccessStatusCode();
@@ -157,5 +194,3 @@ public sealed class GitHubClient(
         p.CreatedAt, p.ClosedAt, p.MergedAt, p.Draft,
         p.User?.Login ?? string.Empty, p.User?.Type ?? "User");
 }
-
-sealed class GitHubNotFoundException(string path) : Exception($"GitHub zwrócił 404 dla {path}");

@@ -5,6 +5,7 @@ import { ErrorState } from '../components/states/ErrorState'
 import { LineSkeleton } from '../components/states/Skeleton'
 import { StaleBanner } from '../components/states/StaleBanner'
 import { useProfile } from '../hooks/useProfile'
+import { parseMaxDifficulty } from '../lib/difficulty'
 import { nearestStopIndex, starBand, starStops } from '../lib/starBand'
 
 const difficultyOptions = [
@@ -30,10 +31,9 @@ export function Landing() {
       .filter(Boolean),
   )
   const [stopIndex, setStopIndex] = useState(nearestStopIndex(Number(params.get('targetStars')) || 500))
-  const [maxDifficulty, setMaxDifficulty] = useState<number | null>(() => {
-    const raw = params.get('maxDifficulty')
-    return raw === null || Number.isNaN(Number(raw)) ? null : Number(raw)
-  })
+  const [maxDifficulty, setMaxDifficulty] = useState<number | null>(() =>
+    parseMaxDifficulty(params.get('maxDifficulty')),
+  )
 
   const profile = useProfile(submitted)
   const detected = profile.data?.data.languages ?? []

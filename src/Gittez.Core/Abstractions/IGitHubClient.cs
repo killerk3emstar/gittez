@@ -35,7 +35,8 @@ public sealed class GitHubUserNotFoundException(string login)
 
 // Wspólna nadklasa dla sytuacji, w których GitHub przestaje odpowiadać na
 // świeże dane, a my przechodzimy na cache zamiast zwracać błąd.
-public abstract class GitHubUnavailableException(string message) : Exception(message);
+public abstract class GitHubUnavailableException(string message, Exception? inner = null)
+    : Exception(message, inner);
 
 public sealed class GitHubRateLimitExceededException(DateTimeOffset resetAt)
     : GitHubUnavailableException($"Limit GitHub API wyczerpany, reset o {resetAt:HH:mm:ss}")
@@ -45,3 +46,14 @@ public sealed class GitHubRateLimitExceededException(DateTimeOffset resetAt)
 
 public sealed class GitHubUnauthorizedException()
     : GitHubUnavailableException("Token GitHuba jest nieprawidłowy lub wygasł");
+
+// Zerwane połączenie, timeout albo 5xx, które przeżyło ponowienia. Dla nas
+// znaczy to samo co odrzucony token: świeżych danych nie będzie, zostaje cache.
+public sealed class GitHubTransportException(string message, Exception? inner = null)
+    : GitHubUnavailableException(message, inner);
+
+// 404 na konkretnym zasobie. To nie jest niedostępność GitHuba: repozytorium
+// mogło zniknąć albo zostać uprywatnione między wyszukaniem a pobraniem issues,
+// więc wypada z listy zamiast wywracać przebieg.
+public sealed class GitHubNotFoundException(string path)
+    : Exception($"GitHub zwrócił 404 dla {path}");

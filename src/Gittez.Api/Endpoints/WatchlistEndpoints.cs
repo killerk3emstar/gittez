@@ -31,10 +31,12 @@ public static class WatchlistEndpoints
 
             if (items.Count == 0) return Results.Ok(Array.Empty<WatchlistItemResponse>());
 
-            var names = items.Select(i => i.RepoFullName).ToArray();
+            // Dopasowanie bez wielkości liter musi być już w zapytaniu: słownik
+            // niżej nie ma czego porównywać, jeżeli baza nie odda wiersza.
+            var names = items.Select(i => i.RepoFullName.ToLower()).ToArray();
 
             var repos = await db.RepoCache.AsNoTracking()
-                .Where(r => names.Contains(r.FullName))
+                .Where(r => names.Contains(r.FullName.ToLower()))
                 .ToListAsync(ct);
 
             var byName = repos.ToDictionary(r => r.FullName, StringComparer.OrdinalIgnoreCase);
@@ -65,16 +67,13 @@ public static class WatchlistEndpoints
 
             if (!TryNormalizeNote(request.Note, out var note)) return NoteTooLong();
 
-            var duplicate = await db.WatchlistItems
-                .AnyAsync(i => i.SessionId == sessionId && i.RepoFullName.ToLower() == fullName.ToLower(), ct);
-
-            if (duplicate) return AlreadyOnWatchlist(fullName);
+            if (await ExistsAsync(db, sessionId, fullName, ct)) return AlreadyOnWatchlist(fullName);
 
             var count = await db.WatchlistItems.CountAsync(i => i.SessionId == sessionId, ct);
             if (count >= MaxItemsPerSession) return WatchlistFull();
 
             var now = time.GetUtcNow();
-            await TouchSessionAsync(db, sessionId, now, ct);
+            await EnsureSessionAsync(db, sessionId, now, ct);
 
             var item = new WatchlistItem
             {
@@ -95,11 +94,14 @@ public static class WatchlistEndpoints
             {
                 // Podwójne kliknięcie w gwiazdkę: sprawdzenie wyżej przegrywa
                 // wyścig, rozstrzyga unikalny indeks (session_id, repo_full_name).
-                return AlreadyOnWatchlist(fullName);
+                // Każdy inny błąd zapisu leci dalej - 409 „już tam jest" byłoby
+                // wtedy nieprawdą, a pozycja i tak by przepadła.
+                if (await ExistsAsync(db, sessionId, fullName, ct)) return AlreadyOnWatchlist(fullName);
+
+                throw;
             }
 
-            var repo = await db.RepoCache.AsNoTracking()
-                .FirstOrDefaultAsync(r => r.FullName == fullName, ct);
+            var repo = await FindCachedRepoAsync(db, fullName, ct);
 
             return Results.Created($"/api/watchlist/{item.Id}", ToResponse(item, repo));
         })
@@ -130,8 +132,7 @@ public static class WatchlistEndpoints
             await TouchSessionAsync(db, sessionId, now, ct);
             await db.SaveChangesAsync(ct);
 
-            var repo = await db.RepoCache.AsNoTracking()
-                .FirstOrDefaultAsync(r => r.FullName == item.RepoFullName, ct);
+            var repo = await FindCachedRepoAsync(db, item.RepoFullName, ct);
 
             return Results.Ok(ToResponse(item, repo));
         })
@@ -159,20 +160,57 @@ public static class WatchlistEndpoints
     }
 
     // Sesja powstaje przy pierwszym zapisie: czytelnicy nie zakładają wierszy,
-    // więc tabela nie puchnie od odwiedzin, które niczego nie zapisały.
+    // więc tabela nie puchnie od odwiedzin, które niczego nie zapisały. Wiersz
+    // sesji zapisuje się osobno, przed pozycją - gdyby szedł tym samym
+    // SaveChanges, kolizja na kluczu sesji wyglądałaby jak duplikat repozytorium.
+    static async Task EnsureSessionAsync(
+        GittezDbContext db, Guid sessionId, DateTimeOffset now, CancellationToken ct)
+    {
+        var session = await db.Sessions.FirstOrDefaultAsync(s => s.Id == sessionId, ct);
+
+        if (session is not null)
+        {
+            session.LastSeenAt = now;
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
+        db.Sessions.Add(new SessionEntity { Id = sessionId, CreatedAt = now, LastSeenAt = now });
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Dwa pierwsze zapisy tej samej sesji naraz: wiersz już jest, nie ma
+            // czego dokładać. Odpinamy przegraną wstawkę, żeby nie wróciła przy
+            // zapisie pozycji.
+            foreach (var entry in db.ChangeTracker.Entries<SessionEntity>()) entry.State = EntityState.Detached;
+        }
+    }
+
+    // Sesja pozycji już istnieje (pilnuje tego klucz obcy), więc tu wystarczy
+    // przesunięcie znacznika razem z zapisem samej pozycji.
     static async Task TouchSessionAsync(
         GittezDbContext db, Guid sessionId, DateTimeOffset now, CancellationToken ct)
     {
         var session = await db.Sessions.FirstOrDefaultAsync(s => s.Id == sessionId, ct);
 
-        if (session is null)
-        {
-            db.Sessions.Add(new SessionEntity { Id = sessionId, CreatedAt = now, LastSeenAt = now });
-            return;
-        }
-
-        session.LastSeenAt = now;
+        if (session is not null) session.LastSeenAt = now;
     }
+
+    static Task<bool> ExistsAsync(
+        GittezDbContext db, Guid sessionId, string fullName, CancellationToken ct) =>
+        db.WatchlistItems
+            .AnyAsync(i => i.SessionId == sessionId && i.RepoFullName.ToLower() == fullName.ToLower(), ct);
+
+    // Wielkość liter w nazwie repozytorium bywa przypadkowa, a lista zestawia
+    // metadane bez jej rozróżniania - odpowiedź na zapis ma robić tak samo.
+    static Task<RepoCacheEntry?> FindCachedRepoAsync(
+        GittezDbContext db, string fullName, CancellationToken ct) =>
+        db.RepoCache.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.FullName.ToLower() == fullName.ToLower(), ct);
 
     static bool TryNormalizeNote(string? raw, out string? note)
     {

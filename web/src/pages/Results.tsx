@@ -9,6 +9,7 @@ import { StaleBanner } from '../components/states/StaleBanner'
 import { useRecommendations } from '../hooks/useRecommendations'
 import { useAddToWatchlist, useWatchedNames } from '../hooks/useWatchlist'
 import type { RecommendationQuery } from '../api/types'
+import { parseMaxDifficulty } from '../lib/difficulty'
 import { pickHighlights } from '../lib/highlight'
 import { starBand } from '../lib/starBand'
 
@@ -20,11 +21,6 @@ export function Results() {
     const login = params.get('login')?.trim()
     if (!login) return null
 
-    // Ręcznie sklejony adres nie może wysłać "NaN" do API - backend odbiłby to
-    // czterysetką z bindera, a użytkownik zobaczyłby błąd bez wyjaśnienia.
-    const raw = params.get('maxDifficulty')
-    const maxDifficulty = raw !== null && Number.isFinite(Number(raw)) ? Number(raw) : null
-
     return {
       login,
       languages: (params.get('languages') ?? '')
@@ -32,7 +28,7 @@ export function Results() {
         .map((l) => l.trim())
         .filter(Boolean),
       targetStars: Number(params.get('targetStars') ?? 500) || 500,
-      maxDifficulty,
+      maxDifficulty: parseMaxDifficulty(params.get('maxDifficulty')),
     }
   }, [params])
 

@@ -23,7 +23,10 @@ public static class RecommendationEndpoints
                 [.. (languages ?? string.Empty)
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)],
                 targetStars is > 0 ? targetStars.Value : 500,
-                maxDifficulty,
+                // Heurystyka zwraca 1-3, więc wartość spoza zakresu znaczy „bez
+                // ograniczeń". Zero z ręcznie sklejonego adresu odsiewałoby
+                // wszystkie issues i dawało pustą listę bez wyjaśnienia.
+                maxDifficulty is >= 1 and <= 3 ? maxDifficulty : null,
                 Math.Clamp(limit ?? 10, 1, 25));
 
             var result = await pipeline.RunAsync(request, ct);

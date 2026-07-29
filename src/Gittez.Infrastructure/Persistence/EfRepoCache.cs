@@ -3,6 +3,8 @@ using Gittez.Core.Models;
 using Gittez.Core.Recommendations;
 using Gittez.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace Gittez.Infrastructure.Persistence;
 
@@ -10,7 +12,8 @@ namespace Gittez.Infrastructure.Persistence;
 // a DbContext nie jest bezpieczny wątkowo.
 public sealed class EfRepoCache(
     IDbContextFactory<GittezDbContext> contextFactory,
-    TimeProvider time) : IRepoCache
+    TimeProvider time,
+    ILogger<EfRepoCache> logger) : IRepoCache
 {
     public async Task<CachedProfile?> GetProfileAsync(string login, CancellationToken ct = default)
     {
@@ -48,7 +51,7 @@ public sealed class EfRepoCache(
         row.PublicRepoCount = profile.PublicRepoCount;
         row.ComputedAt = time.GetUtcNow();
 
-        await SaveIgnoringRacesAsync(db, ct);
+        await SaveIgnoringRacesAsync(db, $"profil {profile.Login}", ct);
     }
 
     public async Task<CachedIssues?> GetIssuesAsync(string fullName, CancellationToken ct = default)
@@ -59,20 +62,22 @@ public sealed class EfRepoCache(
             .Where(i => i.RepoFullName == fullName)
             .ToListAsync(ct);
 
-        if (rows.Count == 0) return null;
-
-        var etag = await db.RepoCache.AsNoTracking()
+        var repo = await db.RepoCache.AsNoTracking()
             .Where(r => r.FullName == fullName)
-            .Select(r => r.ETag)
+            .Select(r => new { r.ETag, r.IssuesFetchedAt })
             .FirstOrDefaultAsync(ct);
 
-        var fetchedAt = rows.Max(r => r.FetchedAt);
+        // Brak wierszy nie znaczy „nie sprawdzaliśmy": repozytorium bez wolnych
+        // good first issues też ma wynik i nie ma po co odpytywać go co przebieg.
+        var fetchedAt = rows.Count > 0 ? rows.Max(r => r.FetchedAt) : repo?.IssuesFetchedAt;
+
+        if (fetchedAt is not { } at) return null;
 
         return new CachedIssues(
             [.. rows.Select(ToScoredIssue)],
-            etag,
-            fetchedAt,
-            IsFresh(fetchedAt, CacheTtl.Issues));
+            repo?.ETag,
+            at,
+            IsFresh(at, CacheTtl.Issues));
     }
 
     public async Task SaveIssuesAsync(
@@ -102,8 +107,9 @@ public sealed class EfRepoCache(
 
         var row = await UpsertRepoAsync(db, repo, now, ct);
         row.ETag = etag;
+        row.IssuesFetchedAt = now;
 
-        await SaveIgnoringRacesAsync(db, ct);
+        await SaveIgnoringRacesAsync(db, $"issues {repo.FullName}", ct);
     }
 
     public async Task TouchIssuesAsync(string fullName, CancellationToken ct = default)
@@ -115,7 +121,9 @@ public sealed class EfRepoCache(
             .ExecuteUpdateAsync(s => s.SetProperty(i => i.FetchedAt, now), ct);
 
         await db.RepoCache.Where(r => r.FullName == fullName)
-            .ExecuteUpdateAsync(s => s.SetProperty(r => r.FetchedAt, now), ct);
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.FetchedAt, now)
+                .SetProperty(r => r.IssuesFetchedAt, now), ct);
     }
 
     public async Task<CachedHealth?> GetHealthAsync(string fullName, CancellationToken ct = default)
@@ -145,7 +153,7 @@ public sealed class EfRepoCache(
         row.HealthBreakdown = [.. breakdown];
         row.HealthComputedAt = now;
 
-        await SaveIgnoringRacesAsync(db, ct);
+        await SaveIgnoringRacesAsync(db, $"health {repo.FullName}", ct);
     }
 
     public async Task<IReadOnlyList<CachedCandidate>> GetCandidatesAsync(
@@ -214,17 +222,26 @@ public sealed class EfRepoCache(
     }
 
     // Dwa równoległe przebiegi mogą wstawiać ten sam klucz; przegrany po prostu
-    // nie nadpisuje danych, które i tak są identyczne.
-    static async Task SaveIgnoringRacesAsync(GittezDbContext db, CancellationToken ct)
+    // nie nadpisuje danych, które i tak są identyczne. Każdy inny błąd zapisu
+    // zostaje w logu: cache, który cicho nie zapisuje, wygląda potem jak wolny
+    // GitHub i nie ma po czym tego poznać.
+    async Task SaveIgnoringRacesAsync(GittezDbContext db, string what, CancellationToken ct)
     {
         try
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
         }
+        catch (DbUpdateException ex)
+        {
+            logger.LogWarning(ex, "Nie udało się zapisać cache'u ({What})", what);
+        }
     }
+
+    static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 
     static ScoredIssue ToScoredIssue(IssueCacheEntry i) => new(
         new IssueSummary(

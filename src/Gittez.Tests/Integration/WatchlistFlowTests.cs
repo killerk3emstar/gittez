@@ -90,6 +90,41 @@ public class WatchlistFlowTests(GittezApp app) : IClassFixture<GittezApp>
         Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
     }
 
+    // Nazwa wklepana małymi literami ma zwrócić te same metadane co lista, która
+    // zestawia je bez rozróżniania wielkości liter.
+    [Fact]
+    public async Task Zapis_nazwy_w_innym_zapisie_liter_zwraca_metadane_z_cachu()
+    {
+        var client = app.CreateClientWithSchema();
+        var session = Guid.NewGuid();
+
+        await app.WithDatabaseAsync(async db =>
+        {
+            if (!await db.RepoCache.AnyAsync(r => r.FullName == Repo)) db.RepoCache.Add(CachedRepo());
+        });
+
+        var created = await client.SendAsync(Post(session, new CreateWatchlistItemRequest(Repo.ToLowerInvariant(), null)));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        var item = (await created.Content.ReadFromJsonAsync<WatchlistItemResponse>())!;
+
+        Assert.NotNull(item.Repo);
+        Assert.Equal(8_900, item.Repo.Stars);
+
+        // Lista dobiera metadane osobnym zapytaniem, więc musi dopasowywać tak
+        // samo jak odpowiedź na zapis - inaczej gwiazdki znikają po odświeżeniu.
+        var listed = await client.SendAsync(Get(session));
+        var only = Assert.Single((await listed.Content.ReadFromJsonAsync<WatchlistItemResponse[]>())!);
+
+        Assert.NotNull(only.Repo);
+        Assert.Equal(8_900, only.Repo.Stars);
+
+        var patched = await client.SendAsync(Patch(session, item.Id, new UpdateWatchlistItemRequest("notatka")));
+        var updated = (await patched.Content.ReadFromJsonAsync<WatchlistItemResponse>())!;
+
+        Assert.NotNull(updated.Repo);
+    }
+
     [Fact]
     public async Task Brak_naglowka_sesji_konczy_sie_400()
     {
