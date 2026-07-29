@@ -1,33 +1,165 @@
 @import 'tailwindcss';
 
-@theme {
-  --color-ink-950: oklch(0.17 0.015 265);
-  --color-ink-900: oklch(0.21 0.017 265);
-  --color-ink-800: oklch(0.27 0.019 265);
-  --color-ink-700: oklch(0.36 0.021 265);
-  --color-ink-400: oklch(0.66 0.02 265);
-  --color-ink-200: oklch(0.86 0.012 265);
+/* Motyw żyje w atrybucie data-theme na <html>, nie w @media: skrypt w
+   index.html rozstrzyga go przed pierwszym malowaniem, a useTheme dopina
+   nasłuch na zmianę ustawienia systemu. Jeden zestaw tokenów na motyw,
+   bez duplikowania palety w regule medialnej. */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --paper: oklch(0.98 0.004 250);
+  --panel: oklch(1 0 0);
+  --sunk: oklch(0.963 0.005 250);
+  --rule: oklch(0.905 0.008 250);
+  --rule-strong: oklch(0.82 0.01 250);
+
+  --ink: oklch(0.245 0.02 258);
+  --ink-soft: oklch(0.4 0.018 256);
+  --muted: oklch(0.465 0.016 256);
+  --faint: oklch(0.6 0.014 254);
+
+  --copper: oklch(0.545 0.135 47);
+  --copper-ink: oklch(0.47 0.14 45);
+  --patina: oklch(0.505 0.075 190);
+  --patina-ink: oklch(0.45 0.075 190);
+  --rust: oklch(0.52 0.16 28);
+  --amber: oklch(0.55 0.12 72);
+
+  --track: oklch(0.912 0.006 250);
+  --on-ink: oklch(0.99 0 0);
 }
 
-html {
+:root[data-theme='dark'] {
   color-scheme: dark;
+
+  --paper: oklch(0.185 0.014 258);
+  --panel: oklch(0.222 0.016 258);
+  --sunk: oklch(0.163 0.012 258);
+  --rule: oklch(0.305 0.016 258);
+  --rule-strong: oklch(0.4 0.018 258);
+
+  --ink: oklch(0.945 0.006 250);
+  --ink-soft: oklch(0.8 0.01 252);
+  --muted: oklch(0.665 0.014 254);
+  --faint: oklch(0.5 0.014 256);
+
+  --copper: oklch(0.735 0.125 55);
+  --copper-ink: oklch(0.775 0.12 58);
+  --patina: oklch(0.715 0.085 185);
+  --patina-ink: oklch(0.755 0.08 185);
+  --rust: oklch(0.68 0.15 30);
+  --amber: oklch(0.79 0.12 80);
+
+  --track: oklch(0.3 0.014 258);
+  --on-ink: oklch(0.16 0.012 258);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-panel: var(--panel);
+  --color-sunk: var(--sunk);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-copper: var(--copper);
+  --color-copper-ink: var(--copper-ink);
+  --color-patina: var(--patina);
+  --color-patina-ink: var(--patina-ink);
+  --color-rust: var(--rust);
+  --color-amber: var(--amber);
+
+  --color-track: var(--track);
+  --color-on-ink: var(--on-ink);
+
+  --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+
+  --radius-panel: 6px;
+  --radius-chip: 3px;
 }
 
 body {
-  @apply bg-ink-950 text-ink-200 antialiased;
+  @apply bg-paper text-ink antialiased;
+  font-family: var(--font-sans);
+  font-synthesis-weight: none;
 }
 
-/* Skeleton i banner o nieświeżych danych - jedyne dwie animacje w projekcie. */
+:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--copper);
+  color: var(--on-ink);
+}
+
+/* Trzy role z jednej rodziny - Archivo ma oś szerokości 62-125%, więc
+   kontrast między nagłówkiem a etykietą jest kontrastem szerokości,
+   nie zderzeniem dwóch krojów. */
+.display {
+  font-stretch: 112%;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+
+.wordmark {
+  font-stretch: 125%;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.label {
+  font-stretch: 82%;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Podziałka skali: kreski co 25 punktów prosto z gradientu, bez
+   dodatkowych węzłów w drzewie. */
+.rail-ticks {
+  background-image: repeating-linear-gradient(to right, var(--rule-strong) 0 1px, transparent 1px 25%);
+}
+
+/* Komponent bez danych nie dostaje zera, tylko pusty tor w ukos - różnica
+   widoczna także bez rozróżniania kolorów. */
+.rail-missing {
+  background-image: repeating-linear-gradient(-45deg, var(--rule-strong) 0 1px, transparent 1px 5px);
+}
+
 @keyframes pulse-soft {
   0%,
   100% {
-    opacity: 0.45;
+    opacity: 0.5;
   }
   50% {
-    opacity: 0.75;
+    opacity: 0.85;
   }
 }
 
 .animate-pulse-soft {
   animation: pulse-soft 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

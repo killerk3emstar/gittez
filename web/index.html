@@ -3,11 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>Gittez - do których repo warto kontrybutować</title>
     <meta
       name="description"
       content="Rekomendacje repozytoriów open source dopasowane do Twojego profilu GitHub, z jawnym rozbiciem oceny dopasowania i zdrowia projektu."
     />
+    <script>
+      // Motyw ustawiony przed pierwszym malowaniem - inaczej ciemne
+      // urządzenie dostaje białe mignięcie na czas startu Reacta.
+      ;(function () {
+        var stored = null
+        try {
+          stored = localStorage.getItem('gittez.theme')
+        } catch (e) {
+          // Prywatny tryb potrafi rzucić na samym odczycie - zostaje system.
+        }
+
+        var dark = stored === 'dark' || (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

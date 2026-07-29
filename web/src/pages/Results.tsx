@@ -10,8 +10,9 @@ import { useRecommendations } from '../hooks/useRecommendations'
 import { useAddToWatchlist, useWatchedNames } from '../hooks/useWatchlist'
 import type { RecommendationQuery } from '../api/types'
 import { parseMaxDifficulty } from '../lib/difficulty'
-import { pickHighlights } from '../lib/highlight'
+import { pickHighlights, scoreBands } from '../lib/highlight'
 import { starBand } from '../lib/starBand'
+import { buttonPrimary } from '../lib/ui'
 
 export function Results() {
   const [params] = useSearchParams()
@@ -38,17 +39,18 @@ export function Results() {
 
   const items = recommendations.data?.data.items ?? []
   const highlights = useMemo(() => pickHighlights(items), [items])
+  const bands = useMemo(() => scoreBands(items), [items])
   const band = query ? starBand(query.targetStars) : null
   const explained = items.find((item) => item.fullName === explaining) ?? null
 
   if (query === null) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16">
+      <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
         <EmptyState
           title="Brak loginu w adresie"
           hints={['Wróć na stronę główną i podaj login GitHub.']}
           action={
-            <Link to="/" className="rounded-lg bg-sky-500 px-4 py-2 font-medium text-ink-950 hover:bg-sky-400">
+            <Link to="/" className={buttonPrimary}>
               Na stronę główną
             </Link>
           }
@@ -58,73 +60,97 @@ export function Results() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <header className="mb-8">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="text-2xl font-semibold text-white">Rekomendacje dla {query.login}</h1>
-          <Link to={`/?${params}`} className="text-sm text-ink-400 transition hover:text-ink-200">
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <header className="border-b border-rule pb-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+          <div>
+            <p className="label text-muted">Rekomendacje dla</p>
+            <h1 className="display mt-2 font-mono text-2xl text-ink">{query.login}</h1>
+          </div>
+
+          <Link to={`/?${params}`} className="text-sm text-muted underline decoration-rule-strong underline-offset-4 transition hover:text-ink">
             Zmień kryteria
           </Link>
         </div>
 
-        <p className="mt-2 text-sm text-ink-400">
-          {query.languages.length > 0 ? query.languages.join(', ') : 'języki z profilu'}
-          {band && ` · ${band.lo.toLocaleString('pl-PL')}-${band.hi.toLocaleString('pl-PL')} ★`}
-          {query.maxDifficulty !== null && ` · trudność do ${query.maxDifficulty}`}
+        <p className="num mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+          <span className="text-ink-soft">
+            {query.languages.length > 0 ? query.languages.join(', ') : 'języki z profilu'}
+          </span>
+          {band && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>
+                {band.lo.toLocaleString('pl-PL')}-{band.hi.toLocaleString('pl-PL')} ★
+              </span>
+            </>
+          )}
+          {query.maxDifficulty !== null && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>trudność do {query.maxDifficulty}</span>
+            </>
+          )}
         </p>
       </header>
 
       {recommendations.data?.isStale && (
-        <div className="mb-6">
+        <div className="mt-6">
           <StaleBanner computedAt={items[0]?.dataFreshness.repo ?? null} />
         </div>
       )}
 
       {recommendations.isPending && (
-        <>
-          <p className="mb-6 text-sm text-ink-400">
+        <div className="mt-8">
+          <p className="mb-6 text-sm text-muted">
             Pierwszy przebieg to około stu wywołań do GitHuba, więc potrwa kilka sekund.
           </p>
           <ResultsSkeleton />
-        </>
+        </div>
       )}
 
       {recommendations.isError && (
-        <ErrorState error={recommendations.error} onRetry={() => recommendations.refetch()} />
+        <div className="mt-8">
+          <ErrorState error={recommendations.error} onRetry={() => recommendations.refetch()} />
+        </div>
       )}
 
       {recommendations.data && items.length === 0 && (
-        <EmptyState
-          title="Nic nie przeszło przez filtry"
-          hints={recommendations.data.data.hints}
-          action={
-            <Link to="/" className="rounded-lg bg-sky-500 px-4 py-2 font-medium text-ink-950 hover:bg-sky-400">
-              Popraw kryteria
-            </Link>
-          }
-        />
+        <div className="mt-8">
+          <EmptyState
+            title="Nic nie przeszło przez filtry"
+            hints={recommendations.data.data.hints}
+            action={
+              <Link to="/" className={buttonPrimary}>
+                Popraw kryteria
+              </Link>
+            }
+          />
+        </div>
       )}
 
       {items.length > 0 && (
         <>
           {/* Zastępuje wycięty komponent punktowy: istnienie wolnego issue jest
               filtrem, nie punktami, więc mówimy o tym raz nad listą (SPEC §0.2). */}
-          <p className="mb-5 rounded-xl border border-ink-800 bg-ink-900/40 px-4 py-3 text-sm text-ink-400">
-            Wszystkie wyniki mają co najmniej jedno nieprzypisane issue.
+          <p className="mt-6 text-sm text-muted">
+            Wszystkie wyniki mają co najmniej jedno nieprzypisane issue. Zacieniowane pole na skali to rozrzut
+            tej miary w całej dziesiątce.
           </p>
 
           {add.isError && (
-            <div className="mb-5">
+            <div className="mt-5">
               <InlineError error={add.error} onDismiss={() => add.reset()} />
             </div>
           )}
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
             {items.map((item) => (
               <RepoCard
                 key={item.fullName}
                 item={item}
                 highlight={highlights.get(item.fullName)}
+                bands={bands}
                 isWatched={watched.has(item.fullName.toLowerCase())}
                 isSaving={add.isPending && add.variables?.repoFullName === item.fullName}
                 onToggleWatch={() => add.mutate({ repoFullName: item.fullName })}

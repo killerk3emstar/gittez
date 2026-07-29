@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
 import type { Recommendation, ScoreComponent } from '../api/types'
+import { RailRow, ScoreRail, type Axis } from './ScoreRail'
 
 type Props = {
   item: Recommendation
   onClose: () => void
 }
 
-// Serce projektu: dwie listy pasków, każdy z liczbą, wartością źródłową i
+// Serce projektu: dwie listy odczytów, każdy z liczbą, wartością źródłową i
 // zdaniem wyjaśnienia. Zdanie przychodzi z ScoreComponent.Explanation, więc
 // opis nie może rozjechać się z wartością (SPEC §9).
 export function ScoreBreakdown({ item, onClose }: Props) {
@@ -20,12 +21,19 @@ export function ScoreBreakdown({ item, onClose }: Props) {
     document.addEventListener('keydown', onKey)
     dialogRef.current?.focus()
 
-    return () => document.removeEventListener('keydown', onKey)
+    // Tło pod modalem nie ma się przewijać razem z nim.
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = previousOverflow
+    }
   }, [onClose])
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:p-8"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/40 p-0 backdrop-blur-sm sm:p-8"
       onClick={onClose}
     >
       <div
@@ -34,45 +42,45 @@ export function ScoreBreakdown({ item, onClose }: Props) {
         aria-modal="true"
         aria-label={`Rozbicie oceny: ${item.fullName}`}
         tabIndex={-1}
-        className="w-full max-w-3xl rounded-2xl border border-ink-800 bg-ink-900 shadow-2xl outline-none"
+        className="w-full max-w-3xl border-rule bg-panel shadow-xl outline-none sm:rounded-panel sm:border"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-ink-800 px-6 py-5">
+        <header className="flex items-start justify-between gap-4 border-b border-rule px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <h2 className="truncate text-lg font-semibold text-white">{item.fullName}</h2>
-            <p className="mt-1 text-sm text-ink-400">
+            <h2 className="truncate font-mono text-base font-medium text-ink">{item.fullName}</h2>
+            <p className="mt-1 text-sm text-muted">
               Każdy komponent niesie własne wyjaśnienie - nic tu nie jest czarną skrzynką.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-lg border border-ink-700 px-3 py-1.5 text-sm text-ink-200 transition hover:bg-ink-800"
+            className="shrink-0 rounded-chip border border-rule px-3 py-1.5 text-sm text-ink transition hover:border-rule-strong hover:bg-sunk"
           >
             Zamknij
           </button>
         </header>
 
-        <div className="grid gap-8 px-6 py-6 md:grid-cols-2">
+        <div className="grid gap-10 px-5 py-6 sm:px-6 md:grid-cols-2">
           <Section
             title="Match Score"
             subtitle="jak bardzo repo pasuje do Ciebie"
             score={item.matchScore}
             components={item.matchBreakdown}
-            tone="text-sky-400"
+            axis="match"
           />
           <Section
             title="Health Score"
             subtitle="czy repo żyje, niezależnie od tego, kim jesteś"
             score={item.healthScore}
             components={item.healthBreakdown}
-            tone="text-emerald-400"
+            axis="health"
           />
         </div>
 
-        <footer className="border-t border-ink-800 px-6 py-4 text-xs text-ink-400">
+        <footer className="border-t border-rule px-5 py-4 text-xs leading-relaxed text-muted sm:px-6">
           Komponenty bez danych nie są liczone jako zero - wynik procentuje się po dostępnych. Wynik końcowy (
-          {item.finalScore.toFixed(1)}) służy wyłącznie do ustalenia kolejności listy.
+          <span className="num">{item.finalScore.toFixed(1)}</span>) służy wyłącznie do ustalenia kolejności listy.
         </footer>
       </div>
     </div>
@@ -84,69 +92,58 @@ type SectionProps = {
   subtitle: string
   score: number | null
   components: ScoreComponent[]
-  tone: string
+  axis: Axis
 }
 
-function Section({ title, subtitle, score, components, tone }: SectionProps) {
+function Section({ title, subtitle, score, components, axis }: SectionProps) {
+  const tone = axis === 'match' ? 'text-copper-ink' : 'text-patina-ink'
+
   return (
     <section>
-      <div className="mb-4 flex items-baseline justify-between gap-3">
-        <div>
-          <h3 className="font-semibold text-white">{title}</h3>
-          <p className="text-xs text-ink-400">{subtitle}</p>
-        </div>
-        <span className={`text-2xl font-semibold tabular-nums ${tone}`}>
-          {score === null ? '-' : score.toFixed(1)}
-        </span>
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="display text-base text-ink">{title}</h3>
+        <span className={`display num text-2xl ${tone}`}>{score === null ? '-' : score.toFixed(1)}</span>
+      </div>
+      <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
+
+      <div className="mt-3">
+        <ScoreRail value={score} axis={axis} label={title} />
       </div>
 
       {components.length === 0 ? (
-        <p className="rounded-lg border border-ink-800 px-3 py-4 text-sm text-ink-400">
-          Brak danych do policzenia tej oceny.
-        </p>
+        <p className="mt-6 border border-rule px-3 py-4 text-sm text-muted">Brak danych do policzenia tej oceny.</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="mt-6 space-y-5">
           {components.map((component) => (
-            <ComponentBar key={component.key} component={component} tone={tone} />
+            <li key={component.key}>
+              <RailRow
+                label={component.label}
+                axis={axis}
+                value={component.points}
+                max={component.maxPoints}
+                readout={
+                  component.points === null
+                    ? 'za mało danych'
+                    : `${component.points.toFixed(1)} / ${component.maxPoints}`
+                }
+                note={
+                  <>
+                    <span className="text-ink-soft">{component.rawValue}</span>
+                    {' - '}
+                    {component.explanation}
+                    {component.isSampled && (
+                      <span className="text-amber" title="Liczone na próbce, nie na całości">
+                        {' '}
+                        (próbka)
+                      </span>
+                    )}
+                  </>
+                }
+              />
+            </li>
           ))}
         </ul>
       )}
     </section>
-  )
-}
-
-function ComponentBar({ component, tone }: { component: ScoreComponent; tone: string }) {
-  const missing = component.points === null
-  const ratio = missing ? 0 : component.points! / component.maxPoints
-
-  return (
-    <li>
-      <div className="flex items-baseline justify-between gap-3 text-sm">
-        <span className={missing ? 'text-ink-400' : 'text-ink-200'}>{component.label}</span>
-        <span className={`shrink-0 tabular-nums ${missing ? 'text-ink-400' : 'text-white'}`}>
-          {missing ? 'za mało danych' : `${component.points!.toFixed(1)} / ${component.maxPoints}`}
-        </span>
-      </div>
-
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-800">
-        {!missing && (
-          <div
-            className={`h-full rounded-full bg-current ${tone}`}
-            style={{ width: `${Math.max(2, ratio * 100)}%` }}
-          />
-        )}
-      </div>
-
-      <p className="mt-1.5 text-xs text-ink-400">
-        <span className="text-ink-200">{component.rawValue}</span>
-        {' - '}
-        {component.explanation}
-        {component.isSampled && (
-          <span className="ml-1 text-amber-400/80" title="Liczone na próbce, nie na całości">
-            (próbka)
-          </span>
-        )}
-      </p>
-    </li>
   )
 }
