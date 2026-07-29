@@ -109,16 +109,22 @@ export function Landing() {
               mają wolne good first issues, a maintainer odpowiada na PR-y.
             </p>
 
-            <form onSubmit={analyze} className="mt-8 flex max-w-lg flex-col gap-2 sm:flex-row">
+            <form onSubmit={analyze} autoComplete="off" className="mt-8 flex max-w-lg flex-col gap-2 sm:flex-row">
+              {/* type="search" nie jest tu ozdobą: menedżery haseł pomijają pola
+                  wyszukiwania, a samo autocomplete="off" jest dla nich tylko
+                  sugestią. Pole faktycznie wyszukuje profil, więc typ jest
+                  zgodny z tym, co robi, i przy okazji daje natywny krzyżyk do
+                  czyszczenia. Nazwa bez słów "login", "user" czy "email", bo to
+                  po nich autofill rozpoznaje pole poświadczeń. */}
               <input
+                type="search"
+                id="gh-lookup"
+                name="gh-lookup"
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
                 placeholder="login GitHub, np. octocat"
                 aria-label="Login GitHub"
                 autoFocus
-                // Historia formularza podpowiadała wcześniej wpisane loginy pod
-                // polem, zasłaniając kryteria. Autokorekta i wielka litera na
-                // iOS też są tu tylko przeszkodą - login GitHuba nie jest słowem.
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
@@ -164,6 +170,7 @@ export function Landing() {
                         </label>
                         <input
                           id="target-stars"
+                          name="target-stars"
                           type="range"
                           min={0}
                           max={starStops.length - 1}

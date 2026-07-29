@@ -134,6 +134,11 @@ function WatchlistRow({ item }: { item: WatchlistItem }) {
         {editing ? (
           <div className="space-y-2">
             <textarea
+              // Identyfikator z numeru pozycji: statyczny dawałby duplikaty na
+              // liście z kilkoma wierszami w trybie edycji.
+              id={`notatka-${item.id}`}
+              name={`notatka-${item.id}`}
+              aria-label={`Notatka do ${item.repoFullName}`}
               value={note}
               onChange={(e) => setNote(e.target.value.slice(0, maxNoteLength))}
               rows={3}
