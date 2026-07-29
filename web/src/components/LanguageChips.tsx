@@ -88,6 +88,10 @@ export function LanguageChips({ detected, selected, onChange }: Props) {
           }}
           placeholder="Dołóż język, np. Rust"
           aria-label="Dołóż język spoza profilu"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           className={`w-48 ${fieldSmall}`}
         />
         <button

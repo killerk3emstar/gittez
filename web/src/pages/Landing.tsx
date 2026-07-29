@@ -116,6 +116,13 @@ export function Landing() {
                 placeholder="login GitHub, np. octocat"
                 aria-label="Login GitHub"
                 autoFocus
+                // Historia formularza podpowiadała wcześniej wpisane loginy pod
+                // polem, zasłaniając kryteria. Autokorekta i wielka litera na
+                // iOS też są tu tylko przeszkodą - login GitHuba nie jest słowem.
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 className={field}
               />
               <button type="submit" disabled={login.trim().length === 0} className={`${buttonPrimary} shrink-0`}>
